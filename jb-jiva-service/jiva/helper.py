@@ -26,11 +26,11 @@ async def get_jiva_repo() -> JivaRepository:
 
 
 @aiocached(cache={})
-def get_library() -> LegalLibrary:
-    bucket_name = os.getenv("JIVA_LIBRARY_BUCKET", "jugalbandi")
-    library_path = os.getenv("JIVA_LIBRARY_PATH", "libraries/jiva")
-    google_jugalbandi = GoogleStorage(bucket_name, library_path)
-    return LegalLibrary("jiva", google_jugalbandi)
+async def get_library() -> LegalLibrary:
+    bucket_name = os.environ["JIVA_LIBRARY_BUCKET"]
+    library_path = os.environ["JIVA_LIBRARY_PATH"]
+    google_storage = GoogleStorage(bucket_name, library_path)
+    return LegalLibrary(id="jiva", store=google_storage)
 
 
 async def verify_access_token(
