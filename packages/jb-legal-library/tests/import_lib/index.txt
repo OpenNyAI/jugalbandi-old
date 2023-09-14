@@ -1,0 +1,11 @@
+file_name - relative path to file
+type - type of document (can be act, amendment or notification/rules)
+publish_date - date document was published (optional), DD-MM-YYYY format
+doc_title - title of the document (e.g. Information Technology Act 2020)
+pass_date - date the act/notification/amendment was passed, in DD-MM-YYYY format
+jurisdiction - can be "center" or name of state (e.g. karnataka)
+effective_from - date from which the act / amendment / notification is effective, DD-MM-YYYY format
+ministry - ministry responsible for the document (optional)
+related_act_title - if this document is an amendment / notification, title of the related act
+related_act_no - the number of the related act
+

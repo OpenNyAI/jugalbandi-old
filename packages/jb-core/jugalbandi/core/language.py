@@ -1,0 +1,28 @@
+from enum import Enum
+
+
+class Language(Enum):
+    EN = "English"
+    HI = "Hindi"
+    BN = "Bengali"
+    GU = "Gujarati"
+    MR = "Marathi"
+    OR = "Oriya"
+    PA = "Punjabi"
+    KN = "Kannada"
+    ML = "Malayalam"
+    TA = "Tamil"
+    TE = "Telugu"
+    AF = "Afrikaans"
+    AR = "Arabic"
+    ZH = "Chinese"
+    FR = "French"
+    DE = "German"
+    ID = "Indonesian"
+    IT = "Italian"
+    JA = "Japanese"
+    KO = "Korean"
+    PT = "Portuguese"
+    RU = "Russian"
+    ES = "Spanish"
+    TR = "Turkish"

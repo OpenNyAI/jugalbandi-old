@@ -1,0 +1,11 @@
+__pycache__/
+
+.pytest_cache/
+.mypy_cache/
+
+.env
+.venv/
+.idea/
+
+.DS_Store
+

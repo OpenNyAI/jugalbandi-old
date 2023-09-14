@@ -1,0 +1,169 @@
+{
+  "folders": [
+    {
+      "name": "Jiva Service",
+      "path": "jb-jiva-service"
+    },
+    {
+      "name": "Generic QA Service",
+      "path": "jb-generic-qa"
+    },
+    {
+      "name": "Auth Service",
+      "path": "jb-auth-service"
+    },
+    {
+      "name": "Labeling Service",
+      "path": "jb-labeling-service"
+    },
+    {
+      "name": "Package jb-core",
+      "path": "packages/jb-core"
+    },
+    {
+      "name": "Package jb-auth-token",
+      "path": "packages/jb-auth-token"
+    },
+    {
+      "name": "Package jb-audio-converter",
+      "path": "packages/jb-audio-converter"
+    },
+    {
+      "name": "Package jb-speech-processor",
+      "path": "packages/jb-speech-processor"
+    },
+    {
+      "name": "Package jb-translator",
+      "path": "packages/jb-translator"
+    },
+    {
+      "name": "Package jb-storage",
+      "path": "packages/jb-storage"
+    },
+    {
+      "name": "Package jb-library",
+      "path": "packages/jb-library"
+    },
+    {
+      "name": "Package jb-legal-library",
+      "path": "packages/jb-legal-library"
+    },
+    {
+      "name": "Package jb-document-collection",
+      "path": "packages/jb-document-collection"
+    },
+    {
+      "name": "Package jb-qa",
+      "path": "packages/jb-qa"
+    },
+    {
+      "name": "Package jb-feedback",
+      "path": "packages/jb-feedback"
+    },
+    {
+      "name": "Package jb-tenant",
+      "path": "packages/jb-tenant"
+    },
+    {
+      "name": "Documentation",
+      "path": "docs"
+    },
+    {
+      "name": "Scripts",
+      "path": "scripts"
+    }
+  ],
+  "extensions": {
+    "recommendations": [
+      "eamodio.gitlens",
+      "fcrespo82.markdown-table-formatter",
+      "jebbs.plantuml",
+      "ms-python.python",
+      "njpwerner.autodocstring",
+      "redhat.vscode-xml",
+      "redhat.vscode-yaml",
+      "timonwong.shellcheck",
+      "zeshuaro.vscode-python-poetry",
+      "zxh404.vscode-proto3",
+      "dbaeumer.vscode-eslint",
+      "esbenp.prettier-vscode"
+    ]
+  },
+  "settings": {
+    "editor.formatOnPaste": true,
+    "editor.formatOnSave": true,
+    "editor.tabCompletion": "on",
+    "editor.tabSize": 2,
+    "files.autoSave": "onFocusChange", // hero
+
+    "plantuml.render": "Local",
+
+    "markdown-table-formatter.limitLastColumnWidth": true,
+
+    // Formatting and linting
+    "eslint.format.enable": true,
+    "eslint.workingDirectories": [{ "mode": "auto" }], // important for mono-repo projects
+    "prettier.endOfLine": "auto", // cross-platform
+    "prettier.semi": false, // align with ESLint Standard
+    "prettier.singleQuote": true, // align with ESLint Standard
+    "prettier.trailingComma": "none", // align with ESLint Standard
+    // "tabnine.experimentalAutoImports": true,
+
+    // Language-Specific
+
+    // python
+    "python.formatting.provider": "none",
+    "python.linting.mypyEnabled": true,
+    "python.linting.flake8Enabled": true,
+    "python.testing.unittestEnabled": false,
+    "python.testing.pytestEnabled": true,
+    "python.testing.pytestArgs": ["tests"],
+    "pythonTestExplorer.testFramework": "pytest",
+
+    // javascript
+    "javascript.format.insertSpaceBeforeFunctionParenthesis": false, // align with ESLint Standard
+    "javascript.updateImportsOnFileMove.enabled": "always",
+    "[javascript]": {
+      "editor.defaultFormatter": "dbaeumer.vscode-eslint" // preconfig ESLint
+    },
+
+    // typescript
+    "typescript.format.insertSpaceBeforeFunctionParenthesis": false, // align with ESLint Standard
+    "typescript.updateImportsOnFileMove.enabled": "always",
+    "[typescript]": {
+      "editor.defaultFormatter": "dbaeumer.vscode-eslint", // preconfig ESLint
+      "editor.codeActionsOnSave": {
+        "source.fixAll": true
+      }
+    },
+    "[typescriptreact]": {
+      "editor.defaultFormatter": "dbaeumer.vscode-eslint", // preconfig ESLint
+      "editor.codeActionsOnSave": {
+        "source.fixAll": true
+      }
+    },
+    // json
+    "[json]": {
+      "editor.defaultFormatter": "esbenp.prettier-vscode"
+    },
+    "[jsonc]": {
+      "editor.defaultFormatter": "esbenp.prettier-vscode"
+    },
+    "[html]": {
+      "editor.defaultFormatter": "esbenp.prettier-vscode"
+    },
+    "[css]": {
+      "editor.defaultFormatter": "esbenp.prettier-vscode"
+    },
+    "[scss]": {
+      "editor.defaultFormatter": "esbenp.prettier-vscode"
+    },
+    "[markdown]": {
+      "editor.defaultFormatter": "esbenp.prettier-vscode"
+    },
+    "java.configuration.updateBuildConfiguration": "interactive",
+    "[python]": {
+      "editor.defaultFormatter": "ms-python.black-formatter"
+    }
+  }
+}

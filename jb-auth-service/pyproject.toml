@@ -1,0 +1,57 @@
+[tool.poetry]
+name = "jb-auth-service"
+version = "0.1.0"
+description = ""
+authors = ["OpenNyAI Team <opennyai@googlegroups.com>"]
+readme = "README.md"
+packages = [{include = "auth_service"}]
+
+[tool.poetry.dependencies]
+python = ">=3.10, <4.0.0"
+fastapi = "0.100.0"
+pydantic = "^1.10.7"
+asyncpg = "0.28.0"
+uvicorn = {extras = ["standard"], version = "^0.22.0"}
+jb-core = {path = "../packages/jb-core", develop = true}
+jb-auth-token = {path = "../packages/jb-auth-token", develop = true}
+types-cachetools = "^5.3.0.5"
+cachetools = "^5.3.1"
+passlib = "^1.7.4"
+python-multipart = "^0.0.6"
+bcrypt = "^4.0.1"
+
+[tool.poetry.group.dev.dependencies]
+mypy = "^1.2.0"
+flake8 = "^6.0.0"
+black = "^23.3.0"
+poethepoet = "^0.19.0"
+pytest = "^7.3.1"
+pytest-asyncio = "^0.21.0"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+
+[tool.poe.tasks.lint]
+shell = """
+black auth_service tests
+flake8 auth_service tests
+mypy auth_service tests
+"""
+interpreter = "bash"
+help = "format, lint, typecheck"
+
+
+[tool.poe.tasks.test]
+cmd = "python -m pytest -vv -o log_cli=1 -o log_cli_level=INFO -W 'ignore::DeprecationWarning' $FILE"
+args = [{name="FILE", default="tests", positional=true}]
+help = "run tests using pytest"
+
+
+[tool.poe.tasks.start]
+shell = """
+gunicorn -b :8080 --reload -w 2 -k uvicorn.workers.UvicornWorker auth_service:app
+"""
+help = "start the server for local development"
