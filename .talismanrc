@@ -48,7 +48,7 @@ fileignoreconfig:
 - filename: jb-jiva-service/tests/abcd.pdf
   checksum: e336625634fe20bebec17a15c49018a9c6ae0c682bffc2e9e78dd310519a46fc
 - filename: jb-jiva-service/tools/data_import.py
-  checksum: e8519317fc9ef5f8903aaee1e5e7d91fc8035e64312f8b1b93e197bddb46aaec
+  checksum: 827c0d32b10db66efdb744d6843ed69659bfe7e0dcac0640b3c47948ed98d370
 - filename: jb-labeling-service/README.md
   checksum: 552bf24ef07d220b470623747a63c1c0502acf39d2d469f5046fbb32646d6232
 - filename: jb-labeling-service/labeling/auth_api.py

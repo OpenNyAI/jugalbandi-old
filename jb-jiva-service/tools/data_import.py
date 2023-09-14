@@ -57,17 +57,27 @@ async def set_meta_data(raw_meta_data: dict) -> DocumentMetaData:
     raw_doc_title = raw_meta_data["Doc title"]
     doc_title = re.sub(r'\b\w+\b', capitalize_words, raw_doc_title)
 
-    publish_date = datetime.strptime(raw_meta_data["Publish Date"], "%d/%m/%Y")
-    formatted_publish_date = publish_date.strftime("%Y-%m-%d")
+    if raw_meta_data["Publish Date"] != "":
+        publish_date = datetime.strptime(raw_meta_data["Publish Date"], "%d/%m/%Y")
+        formatted_publish_date = publish_date.strftime("%Y-%m-%d")
+    else:
+        formatted_publish_date = ""
 
-    pass_date = datetime.strptime(raw_meta_data["Pass Date"], "%d/%m/%Y")
-    formatted_pass_date = pass_date.strftime("%Y-%m-%d")
+    if raw_meta_data["Pass Date"] != "":
+        pass_date = datetime.strptime(raw_meta_data["Pass Date"], "%d/%m/%Y")
+        formatted_pass_date = pass_date.strftime("%Y-%m-%d")
+    else:
+        formatted_pass_date = ""
 
-    effective_from_date = datetime.strptime(raw_meta_data["Effective From"], "%d/%m/%Y")
-    formatted_effective_from_date = effective_from_date.strftime("%Y-%m-%d")
+    if raw_meta_data["Effective From"] != "":
+        effective_from_date = datetime.strptime(raw_meta_data["Effective From"], "%d/%m/%Y")
+        formatted_effective_from_date = effective_from_date.strftime("%Y-%m-%d")
+    else:
+        formatted_effective_from_date = ""
 
     doc_type = raw_meta_data["Type"].lower().strip()
-    if doc_type != "act" and raw_meta_data["Related Act title"] != "NA":
+    if (doc_type != "act" and raw_meta_data["Related Act title"] != "NA" and
+       raw_meta_data["Related Act no"] != "NA" and raw_meta_data["Related Act Year"] != "NA"):
         act_title = raw_meta_data["Related Act title"]
         act_no = raw_meta_data["Related Act no"]
         act_year = raw_meta_data["Related Act Year"]
@@ -109,6 +119,7 @@ async def upload_thumbnail(document: Document):
     pdf_document = fitz.open(stream=buffer.read(), filetype="pdf")
     page = pdf_document.load_page(0)
     pix = page.get_pixmap()
+    print("AFTER pixmap")
     image = Image.frombytes("RGB", [pix.width, pix.height], pix.samples)
     image_buffer = BytesIO()
     image.save(image_buffer, format="PNG")
@@ -128,7 +139,7 @@ async def upload_section(document: Document):
     document_meta_data = await document.read_metadata()
     original_file_name = document_meta_data.original_file_name
     print("Original File Name:", original_file_name)
-    excel_file_path = "Combined Acts - Page numbers.xlsx"
+    excel_file_path = os.environ["SECTIONS_EXCEL_PATH"]
     workbook = openpyxl.load_workbook(excel_file_path)
 
     section_list = []
@@ -157,11 +168,14 @@ async def upload_document(jiva_library: Library, csv_file_name: str):
         for row in reader:
             raw_meta_data.append(dict(row))
 
+    counter = 1
+    base_act_path = os.environ["ACTS_PATH"]
     for meta_data in raw_meta_data:
-        file_path = os.path.join("All Acts", meta_data["File Name"])
+        file_path = os.path.join(base_act_path, meta_data["File Name"])
         document_meta_data = await set_meta_data(meta_data)
         document = await upload_file(jiva_library, file_path, document_meta_data)
-        print("\nDocument ID:", document.id)
+        print("\nFile Count:", counter)
+        print("Document ID:", document.id)
         print("Document Title:", document_meta_data.title)
         await upload_thumbnail(document)
         await upload_section(document)
@@ -172,6 +186,7 @@ async def upload_document(jiva_library: Library, csv_file_name: str):
                 "Document Title": document_meta_data.title,
                 "Document File Name": document_meta_data.original_file_name,
             })
+        counter += 1
 
 
 if __name__ == "__main__":
@@ -181,5 +196,5 @@ if __name__ == "__main__":
                                 bucket_name=os.environ["JIVA_LIBRARY_BUCKET"],
                                 base_path=os.environ["JIVA_LIBRARY_PATH"]))
     # Run the below command each time once for new sheets
-    # convert_google_sheets_meta_data_to_csv(required_sheet_name="Data_Pranav")
-    asyncio.run(upload_document(jiva_library=jiva_library, csv_file_name="Data_Pranav.csv"))
+    # convert_google_sheets_meta_data_to_csv(required_sheet_name="Data_Arushi")
+    asyncio.run(upload_document(jiva_library=jiva_library, csv_file_name="Data_Arushi.csv"))
