@@ -1,5 +1,7 @@
 # Labeling Service
 
+Labeling Service is a collection of APIs that are specific to the Argument Generation application which provides the necessary endpoints for handling case information and their related data. It uses FastAPI and PostgreSQL to achieve the task at hand.
+
 # 🔧 1. Installation
 
 To use the code, you need to follow these steps:
