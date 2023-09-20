@@ -33,3 +33,10 @@ The packages contain several individual poetry packages which are plug and play 
 ## Setup
 
 The repository comes with a code-workspace file `jb.code-workspace` which can be used to open the entire repository in VSCode. The workspace file contains all the necessary settings and configurations to use the repository in VSCode. This can also be customized to suit your needs.
+
+## New Updates
+
+1. Categorized the project structure to have packages and services in the repository.
+2. Added `jb-auth-service`, `jb-jiva-service`, `jb-labeling-service` and several individual packages to the repository.
+3. All services and packages are now using `poetry` for dependency management.
+4. Added `jb.code-workspace` file to open the repository in VSCode.

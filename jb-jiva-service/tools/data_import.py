@@ -61,7 +61,7 @@ async def set_meta_data(raw_meta_data: dict) -> DocumentMetaData:
         publish_date = datetime.strptime(raw_meta_data["Publish Date"], "%d/%m/%Y")
         formatted_publish_date = publish_date.strftime("%Y-%m-%d")
     else:
-        formatted_publish_date = ""
+        formatted_publish_date = None
 
     if raw_meta_data["Pass Date"] != "":
         pass_date = datetime.strptime(raw_meta_data["Pass Date"], "%d/%m/%Y")
