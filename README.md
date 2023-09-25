@@ -45,4 +45,8 @@ The repository comes with a code-workspace file `jb.code-workspace` which can be
 
 ## Raise an Issue
 
-To raise an issue, follow the template present in `ISSUES_TEMPLATE.md` file and create a new issue.
+To raise an issue, follow the template in `ISSUES_TEMPLATE.md` file which is present in the docs folder and create a new issue.
+
+## Raise a Pull Request
+
+To raise a PR, follow the template in `PULL_REQUEST_TEMPLATE.md` file which is present in the docs folder and create a new PR.
