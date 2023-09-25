@@ -1,8 +1,10 @@
 # Jugalbandi
 
-This repository is home to several Jugalbandi services and packages for organisations to build and customize on top of them.
+This repository is home to several Jugalbandi services and packages for organisations to build and customize on top of them. The repository is structured in a way that it can be used as a monorepo for all the services and packages.
 
 ## Services
+
+The following gives a brief description of each service in the repository. To know more in detail, please look into their respective folders.
 
 ### `Auth Service (jb-auth-service)`
 
@@ -40,3 +42,7 @@ The repository comes with a code-workspace file `jb.code-workspace` which can be
 2. Added `jb-auth-service`, `jb-jiva-service`, `jb-labeling-service` and several individual packages to the repository.
 3. All services and packages are now using `poetry` for dependency management.
 4. Added `jb.code-workspace` file to open the repository in VSCode.
+
+## Raise an Issue
+
+To raise an issue, follow the template present in ISSUES_TEMPLATE.md file and create a new issue.
