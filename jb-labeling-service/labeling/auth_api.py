@@ -3,8 +3,8 @@ from fastapi.security import OAuth2PasswordRequestForm
 from fastapi import Depends, FastAPI, HTTPException
 from fastapi.responses import JSONResponse
 from .db import LabelingRepository
-from .model import LoginResponse, User
-from .helper import get_labeling_repo
+from .model import TokenResponse, TokenRequest, User
+from .helper import get_labeling_repo, verify_refresh_token
 from auth_service.password import get_hashed_password, verify_password
 from jugalbandi.auth_token import create_access_token, create_refresh_token
 
@@ -31,7 +31,7 @@ async def signup(
     "/login",
     summary="Create access and refresh tokens for user",
     tags=["Authentication"],
-    response_model=LoginResponse,
+    response_model=TokenResponse,
 )
 async def login(
     form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
@@ -43,8 +43,32 @@ async def login(
     password_hash = user_row.get("password_hash")
     if not verify_password(form_data.password, password_hash):
         raise HTTPException(status_code=422, detail="Incorrect password")
-    return LoginResponse(
+    return TokenResponse(
         access_token=create_access_token(data={"sub": form_data.username}),
         token_type="bearer",
         refresh_token=create_refresh_token(data={"sub": form_data.username}),
+    )
+
+
+@auth_app.post(
+    "/new-auth-tokens",
+    summary="Create new access and refresh tokens for user after verification",
+    tags=["Authentication"],
+    response_model=TokenResponse,
+    include_in_schema=False,
+)
+async def new_auth_tokens(
+    token_request: TokenRequest,
+    labeling_repo: Annotated[LabelingRepository, Depends(get_labeling_repo)],
+):
+    user_details = await labeling_repo.get_user(email_id=token_request.email_id)
+    if user_details is None:
+        raise HTTPException(status_code=422, detail="Incorrect email")
+    email_id = await verify_refresh_token(token=token_request.refresh_token)
+    if email_id != token_request.email_id:
+        raise HTTPException(status_code=422, detail="Incorrect refresh token")
+    return TokenResponse(
+        access_token=create_access_token(data={"sub": email_id}),
+        token_type="bearer",
+        refresh_token=create_refresh_token(data={"sub": email_id}),
     )

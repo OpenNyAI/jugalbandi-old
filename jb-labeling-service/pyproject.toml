@@ -47,6 +47,12 @@ docker build --platform=linux/amd64  -f tools/Dockerfile -t gcr.io/indian-legal-
 """
 help = "build docker container"
 
+[tool.poe.tasks.start]
+shell = """
+uvicorn --port 8000 --reload labeling.api:app
+"""
+help = "start the server for local development"
+
 [tool.poe.tasks.test]
 cmd = "python -m pytest -vv -o log_cli=1 -o log_cli_level=INFO -W 'ignore::DeprecationWarning' $FILE"
 args = [{name="FILE", default="tests", positional=true}]

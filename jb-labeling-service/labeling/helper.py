@@ -2,7 +2,7 @@ from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError
 from jugalbandi.core.caching import aiocached
-from jugalbandi.auth_token.token import decode_token
+from jugalbandi.auth_token.token import decode_token, decode_refresh_token
 from .db import LabelingRepository
 from .model import User, TokenLength
 from typing import Annotated
@@ -42,6 +42,23 @@ async def verify_access_token(labeling_repo: Annotated[LabelingRepository, Depen
     return User(name=user_details.get("name"),
                 email=user_details.get("email"),
                 affliation=user_details.get("affliation"))
+
+
+async def verify_refresh_token(token: str):
+    credentials_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Could not validate credentials",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+    try:
+        payload = decode_refresh_token(token)
+        username: str = payload
+        if username is None:
+            raise credentials_exception
+    except JWTError:
+        raise credentials_exception
+
+    return username
 
 
 async def call_openai_api(messages, max_tokens=1024, model='gpt-3.5-turbo'):

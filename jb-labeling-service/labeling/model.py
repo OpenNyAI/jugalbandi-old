@@ -4,12 +4,6 @@ from enum import Enum
 from datetime import datetime
 
 
-class LoginResponse(BaseModel):
-    access_token: str
-    token_type: str
-    refresh_token: str
-
-
 class CaseSection(BaseModel):
     section_number: str
     act_title: str
@@ -86,3 +80,14 @@ class TokenLength(Enum):
     MAX_GENERATED_ARGUMENTS = 2048
     MAX_GPT4 = 8192
     MAX_GPT3_5_TURBO = 16384
+
+
+class TokenRequest(BaseModel):
+    email_id: str
+    refresh_token: str
+
+
+class TokenResponse(BaseModel):
+    access_token: str
+    token_type: str
+    refresh_token: str

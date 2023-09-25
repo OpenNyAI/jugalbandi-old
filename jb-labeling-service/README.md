@@ -1,6 +1,6 @@
 # Labeling Service
 
-Labeling Service is a collection of APIs that are specific to the Argument Generation application which provides the necessary endpoints for handling case information and their related data. It uses FastAPI and PostgreSQL to achieve the task at hand.
+Labeling Service is a collection of APIs that are specific to the **Argument Generation application** which provides the necessary endpoints for handling case information and their related data. It uses FastAPI and PostgreSQL to achieve the task at hand.
 
 # 🔧 1. Installation
 
@@ -66,7 +66,7 @@ To use the code, you need to follow these steps:
 Once the above installation steps are completed, run the following command in jb-labeling-service folder of the repository in terminal:
 
 ```bash
-  poetry run uvicorn labeling.api:app --reload
+  poetry run poe start
 ```
 
 # 📃 3. API Specification and Documentation

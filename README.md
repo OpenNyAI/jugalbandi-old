@@ -45,4 +45,4 @@ The repository comes with a code-workspace file `jb.code-workspace` which can be
 
 ## Raise an Issue
 
-To raise an issue, follow the template present in ISSUES_TEMPLATE.md file and create a new issue.
+To raise an issue, follow the template present in `ISSUES_TEMPLATE.md` file and create a new issue.
