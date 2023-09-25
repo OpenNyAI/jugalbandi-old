@@ -61,7 +61,7 @@ async def new_auth_tokens(
     token_request: TokenRequest,
     labeling_repo: Annotated[LabelingRepository, Depends(get_labeling_repo)],
 ):
-    user_details = await labeling_repo.get_user(email_id=token_request.email_id)
+    user_details = await labeling_repo.get_user(email=token_request.email_id)
     if user_details is None:
         raise HTTPException(status_code=422, detail="Incorrect email")
     email_id = await verify_refresh_token(token=token_request.refresh_token)

@@ -1,30 +1,24 @@
 # Jugalbandi
 
-This repository is home to several Jugalbandi services and packages for organisations to build and customize on top of them. The repository is structured in a way that it can be used as a monorepo for all the services and packages.
+Jugalbandi is home to several Jugalbandi services and packages for organisations to build and customize on top of them. This repository is structured in a way that it can be used as a monorepo for all the services and packages.
 
 ## Services
 
 The following gives a brief description of each service in the repository. To know more in detail, please look into their respective folders.
 
-### `Auth Service (jb-auth-service)`
+### <b>Auth Service (jb-auth-service)</b>
 
 The Auth service acts like a plug-n-play service in a way it can be plugged into any service which needs authentication mechanism. It uses basic login and signup endpoints to validate authentication.
 
-<br>
-
-### `Generic QnA (jb-generic-qa)`
+### <b>Generic QnA (jb-generic-qa)</b>
 
 The Generic QnA service is a collection of APIs which are used to do a factual question and answering over arbitrary number of documents. It uses LLMs to answer queries based on the given documents.
 
-<br>
-
-### `JIVA Service (jb-jiva-service)`
+### <b>JIVA Service (jb-jiva-service)</b>
 
 The JIVA service is specific to the JIVA (Judges' Intelligent Virtual Assistant) application which does provide the necessary endpoints and handles data. It uses FastAPI and PostgreSQL to achieve the task at hand.
 
-<br>
-
-### `Labeling Service (jb-labeling-service)`
+### <b>Labeling Service (jb-labeling-service)</b>
 
 Like JIVA service, the labeling serice is also unique to its own application Argument Generation. It also uses FastAPI and PostgreSQL to do its operations and provide the necessary endpoints for the application to consume.
 
