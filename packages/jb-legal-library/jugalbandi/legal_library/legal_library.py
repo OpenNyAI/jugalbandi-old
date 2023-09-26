@@ -189,13 +189,14 @@ class LegalLibrary(Library):
     async def search_sections(self, query: str):
         processed_query = await self._preprocess_query(query)
         processed_query = processed_query.strip()
-        pattern = re.compile(r'\b[Ss]ec(?:tion)? (\d+[A-Z]{0,3}) (.+)', re.IGNORECASE)
+        pattern = re.compile(r'\b[Ss]ec(?:tion)? (\d+[A-Z]{0,3})', re.IGNORECASE)
         matches = re.search(pattern, processed_query)
         if matches:
             section_number = matches.group(1)
             split_string = pattern.split(processed_query)
-            split_string = list(filter(lambda x: x != "", split_string))
-            title = split_string[-1]
+            split_string = list(filter(lambda x: x != "" and x != section_number,
+                                       split_string))
+            title = split_string[0].strip()
             title = re.sub(r'(?i)of', "", title)
             documents_metadata = await self.search_titles(title)
             document_metadata = documents_metadata[0]
@@ -206,7 +207,7 @@ class LegalLibrary(Library):
                                                                 document_id,
                                                                 document_metadata))
 
-            if len(document_sections) == 0:
+            if document_sections[0] is None:
                 raise InternalServerException("Cannot find section and page number")
 
             act_id = (document_metadata.extra_data["legal_act_jurisdiction"] + "-" +

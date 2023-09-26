@@ -39,6 +39,14 @@ user_app.add_middleware(
 )
 
 
+@user_app.exception_handler(Exception)
+async def custom_exception_handler(request, exception):
+    return JSONResponse(
+        status_code=exception.status_code,
+        content={"error_message": str(exception)}
+    )
+
+
 @user_app.get(
     "/query",
     response_model=QueryResult,
