@@ -2,6 +2,8 @@ import fitz
 import os
 import re
 import csv
+import pandas as pd
+import uuid
 from fuzzywuzzy import fuzz
 
 # Base directory with all karnataka acts
@@ -174,3 +176,41 @@ def writing_page_numbers():
                     "Start page": page_numbers[i]}
             writer.writerow(data)
         counter += 1
+
+
+def writing_csv_files_to_excel():
+    directory = "Karnataka CSV files"
+    csv_files = os.listdir(directory)
+    writer = pd.ExcelWriter('karnataka_output.xlsx', engine='xlsxwriter')
+
+    # Loop through each CSV file and copy data to a new worksheet
+    for index, csv_file in enumerate(csv_files):
+        # Read the CSV file using pandas
+        print(csv_file)
+        full_path = os.path.join(directory, csv_file)
+        df = pd.read_csv(full_path)
+
+        file_name, _ = os.path.splitext(csv_file)
+        file_name += ".pdf"
+
+        # Write the dataframe to a new worksheet in the Excel file
+        try:
+            worksheet = writer.book.add_worksheet(file_name[:31])
+            worksheet.write(0, 0, file_name)  # Write the title to the first cell
+            worksheet.set_column(0, df.shape[1] - 1, 12)
+            df.to_excel(writer, sheet_name=file_name[:31], startrow=1, header=True, index=False)
+        except Exception:
+            try:
+                worksheet = writer.book.add_worksheet(file_name[10:41])
+                worksheet.write(0, 0, file_name)  # Write the title to the first cell
+                worksheet.set_column(0, df.shape[1] - 1, 12)
+                df.to_excel(writer, sheet_name=file_name[10:41], startrow=1, header=True, index=False)
+            except Exception:
+                new_uuid = str(uuid.uuid4())
+                worksheet = writer.book.add_worksheet(new_uuid[12:])
+                worksheet.write(0, 0, file_name)  # Write the title to the first cell
+                worksheet.set_column(0, df.shape[1] - 1, 12)
+                df.to_excel(writer, sheet_name=new_uuid[12:], startrow=1, header=True, index=False)
+
+    # Save the Excel file
+    writer._save()
