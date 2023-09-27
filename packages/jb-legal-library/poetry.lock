@@ -1489,6 +1489,17 @@ socks = ["PySocks (>=1.5.6,!=1.5.7)"]
 use-chardet-on-py3 = ["chardet (>=3.0.2,<6)"]
 
 [[package]]
+name = "roman"
+version = "4.1"
+description = "Integer to Roman numerals converter"
+optional = false
+python-versions = ">=3.7"
+files = [
+    {file = "roman-4.1-py3-none-any.whl", hash = "sha256:f131fd5eee3510f6173b825404eb97875a6c1925f73a2d7d48cfc67823a67c3c"},
+    {file = "roman-4.1.tar.gz", hash = "sha256:4da8a200529a730822a27f1704b3ac70bc907141d3bc558115fb8e36af13b412"},
+]
+
+[[package]]
 name = "rsa"
 version = "4.9"
 description = "Pure-Python RSA implementation"
@@ -1804,4 +1815,4 @@ multidict = ">=4.0"
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.10, <4.0.0"
-content-hash = "be26b59387e55a9b665122d9d5e9f73d9fc1b7270713d6eae2e3f4aec6eb2d50"
+content-hash = "5cf989a8a910ee4b39eaa48cac84d60cd05f99857b87cbf473e5d0afde242e5d"

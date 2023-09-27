@@ -16,6 +16,7 @@ import re
 import os
 import openai
 import json
+import roman
 import numpy as np
 
 
@@ -146,12 +147,23 @@ class LegalLibrary(Library):
 
     async def _preprocess_query(self, query: str) -> str:
         query = await self._abbreviate_query(query)
-        words = ["Give me", "Give", "Find me", "Find", "Get me", "Get"]
+        words = ["Give me", "Give", "Find me", "Find", "Get me", "Get",
+                 "Tell me", "Tell"]
         for word in words:
             pattern = re.compile(re.escape(word), re.IGNORECASE)
             query = pattern.sub("", query)
 
         return query.strip()
+
+    async def _preprocess_section_number(self, section_number: str) -> str:
+        try:
+            result = int(section_number)
+        except ValueError:
+            try:
+                result = roman.fromRoman(section_number)
+            except Exception:
+                raise IncorrectInputException("Incorrect section number format")
+        return str(result)
 
     async def _get_document_section(self, section_number: str,
                                     document_id: str, document_metadata:
@@ -189,7 +201,8 @@ class LegalLibrary(Library):
     async def search_sections(self, query: str):
         processed_query = await self._preprocess_query(query)
         processed_query = processed_query.strip()
-        pattern = re.compile(r'\b[Ss]ec(?:tion)? (\d+[A-Z]{0,3})', re.IGNORECASE)
+        pattern = re.compile(r'\b[Ss]ec(?:tion)? (\d+|[IVXLCDM]+[A-Z]{0,3})',
+                             re.IGNORECASE)
         matches = re.search(pattern, processed_query)
         if matches:
             section_number = matches.group(1)
@@ -198,6 +211,7 @@ class LegalLibrary(Library):
                                        split_string))
             title = split_string[0].strip()
             title = re.sub(r'(?i)of', "", title)
+            section_number = await self._preprocess_section_number(section_number)
             documents_metadata = await self.search_titles(title)
             document_metadata = documents_metadata[0]
             document_id = document_metadata.id
