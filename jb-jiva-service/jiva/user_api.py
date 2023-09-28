@@ -67,6 +67,8 @@ async def query(
     query: str,
     language: Language,
 ):
+    if language != Language.EN:
+        query = await translator.translate_text(query, language, Language.EN)
     pattern = re.compile(r"\b[Ss]ec(?:tion)?", re.IGNORECASE)
     matches = re.search(pattern, query)
     if matches:
@@ -125,7 +127,6 @@ async def get_document(
 async def get_documents(
     authorization: Annotated[User, Depends(verify_access_token)],
     jiva_library: Annotated[LegalLibrary, Depends(get_library)],
-    translator: Annotated[Translator, Depends(get_translator)],
     language: Language,
 ):
     catalog = await jiva_library.catalog()

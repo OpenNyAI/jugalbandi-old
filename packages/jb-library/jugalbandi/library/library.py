@@ -34,6 +34,7 @@ class DocumentSupportingMetadata(BaseModel):
 class DocumentMetaData(BaseModel):
     id: str = ""
     title: str
+    translated_title:  Dict[str, str] = {}
     original_file_name: str
     source: Optional[str] = None
     original_format: DocumentFormat
