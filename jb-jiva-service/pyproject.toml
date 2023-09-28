@@ -36,6 +36,7 @@ types-pytz = "^2023.3.0.1"
 sendgrid = "^6.10.0"
 pandas = "^2.1.1"
 roman = "^4.1"
+jb-translator = {path = "../packages/jb-translator", develop = true}
 
 [tool.pytest.ini_options]
 pythonpath = [

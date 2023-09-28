@@ -5,6 +5,11 @@ from jugalbandi.core.caching import aiocached
 from jugalbandi.auth_token.token import decode_token, decode_refresh_token
 from jugalbandi.legal_library import LegalLibrary
 from jugalbandi.storage import GoogleStorage
+from jugalbandi.translator import (
+    CompositeTranslator,
+    GoogleTranslator,
+    DhruvaTranslator,
+)
 from .db import JivaRepository
 from .model import User
 from typing import Annotated
@@ -31,6 +36,10 @@ async def get_library() -> LegalLibrary:
     library_path = os.environ["JIVA_LIBRARY_PATH"]
     google_storage = GoogleStorage(bucket_name, library_path)
     return LegalLibrary(id="jiva", store=google_storage)
+
+
+async def get_translator():
+    return CompositeTranslator(GoogleTranslator(), DhruvaTranslator())
 
 
 async def verify_access_token(
