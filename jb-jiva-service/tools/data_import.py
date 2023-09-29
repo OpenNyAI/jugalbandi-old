@@ -189,20 +189,33 @@ async def upload_document(jiva_library: Library, csv_file_name: str):
         counter += 1
 
 
-# TODO: map the translated data to the meta data and update it
-async def update_metadata(jiva_library: Library):
+async def update_metadata(jiva_library: Library, csv_file_name: str):
     catalog = await jiva_library.catalog()
-    for cat in catalog:
-        meta_data = catalog[cat]
-        meta_data.translated_data = {
-            "title": {
-                "hi": "bye",
-                "kn": "hello"
-            },
-        }
-        print(meta_data)
-        print("\n\n")
-        break
+    with open(csv_file_name, "r") as csv_input:
+        reader = csv.DictReader(csv_input)
+        counter = 1
+        for row in reader:
+            cat = row["Document ID"]
+            print("\nFile Count:", counter)
+            print("Document ID:", cat)
+            document: Document = jiva_library.get_document(cat)
+            meta_data = catalog[cat]
+            meta_data.translated_data = {
+                "title": {
+                    "Kannada": row["Title in Kannada"],
+                    "Hindi": row["Title in Hindi"]
+                },
+                "legal_act_title": {
+                    "Kannada": row["Legal Act Title in Kannada"],
+                    "Hindi": row["Legal Act Title in Hindi"]
+                },
+                "legal_act_jurisdiction": {
+                    "Kannada": row["Legal Ministry in Kannada"],
+                    "Hindi": row["Legal Ministry in Hindi"]
+                }
+            }
+            await document.write_metadata(meta_data)
+            counter += 1
 
 
 if __name__ == "__main__":
@@ -211,7 +224,9 @@ if __name__ == "__main__":
                            store=GoogleStorage(
                                 bucket_name=os.environ["JIVA_LIBRARY_BUCKET"],
                                 base_path=os.environ["JIVA_LIBRARY_PATH"]))
-    # Run the below command each time once for new sheets
+    # Run the below command once for converting given sheet to csv file
     # convert_google_sheets_meta_data_to_csv(required_sheet_name="Data_Arushi")
+    # Run the below command once for uploading docs in given csv file
     # asyncio.run(upload_document(jiva_library=jiva_library, csv_file_name="Data_Arushi.csv"))
-    asyncio.run(update_metadata(jiva_library=jiva_library))
+    # Run the below command once to add translated fields to metadata
+    # asyncio.run(update_metadata(jiva_library=jiva_library, csv_file_name="translated_new_meta_data.csv"))
