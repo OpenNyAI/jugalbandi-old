@@ -29,7 +29,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from jugalbandi.library import DocumentMetaData
 from jugalbandi.legal_library.legal_library import LegalLibrary, ActMetaData
 from jugalbandi.translator import Translator
-from jugalbandi.core.language import Language
+# from jugalbandi.core.language import Language
 from PIL import Image
 from typing import Dict, List
 from datetime import datetime
@@ -65,10 +65,10 @@ async def query(
     jiva_library: Annotated[LegalLibrary, Depends(get_library)],
     translator: Annotated[Translator, Depends(get_translator)],
     query: str,
-    language: Language,
+    # language: Language,
 ):
-    if language != Language.EN:
-        query = await translator.translate_text(query, language, Language.EN)
+    # if language != Language.EN:
+    #     query = await translator.translate_text(query, language, Language.EN)
     pattern = re.compile(r"\b[Ss]ec(?:tion)?", re.IGNORECASE)
     matches = re.search(pattern, query)
     if matches:
@@ -127,7 +127,7 @@ async def get_document(
 async def get_documents(
     authorization: Annotated[User, Depends(verify_access_token)],
     jiva_library: Annotated[LegalLibrary, Depends(get_library)],
-    language: Language,
+    # language: Language,
 ):
     catalog = await jiva_library.catalog()
     documents = [DocumentInfo(id=cat, title=catalog[cat].title) for cat in catalog]
@@ -143,7 +143,7 @@ async def get_documents(
 async def get_document_info(
     authorization: Annotated[User, Depends(verify_access_token)],
     jiva_library: Annotated[LegalLibrary, Depends(get_library)],
-    translator: Annotated[Translator, Depends(get_translator)],
+    # language: Language,
     document_id: str,
 ):
     document = jiva_library.get_document(document_id)
@@ -158,7 +158,6 @@ async def get_document_info(
 async def get_document_sections_info(
     authorization: Annotated[User, Depends(verify_access_token)],
     jiva_library: Annotated[LegalLibrary, Depends(get_library)],
-    translator: Annotated[Translator, Depends(get_translator)],
     document_id: str,
 ):
     document = jiva_library.get_document(document_id)
@@ -176,7 +175,6 @@ async def get_document_sections_info(
 async def get_act_info(
     authorization: Annotated[User, Depends(verify_access_token)],
     jiva_library: Annotated[LegalLibrary, Depends(get_library)],
-    translator: Annotated[Translator, Depends(get_translator)],
     act_id: str,
 ):
     act_catalog = await jiva_library.act_catalog()
@@ -193,7 +191,6 @@ async def get_act_info(
 async def get_daily_activities(
     authorization: Annotated[User, Depends(verify_access_token)],
     jiva_repository: Annotated[JivaRepository, Depends(get_jiva_repo)],
-    translator: Annotated[Translator, Depends(get_translator)],
     email_id: str,
 ):
     daily_activities: Dict[str, List] = {}
@@ -240,7 +237,6 @@ async def get_daily_activities(
 async def delete_daily_activity(
     authorization: Annotated[User, Depends(verify_access_token)],
     jiva_repository: Annotated[JivaRepository, Depends(get_jiva_repo)],
-    translator: Annotated[Translator, Depends(get_translator)],
     email_id: str,
     message_id: str
 ):
@@ -257,7 +253,6 @@ async def delete_daily_activity(
 async def get_conversation_history(
     authorization: Annotated[User, Depends(verify_access_token)],
     jiva_repository: Annotated[JivaRepository, Depends(get_jiva_repo)],
-    translator: Annotated[Translator, Depends(get_translator)],
     email_id: str,
 ):
     conversation_history_list = await jiva_repository.get_conversation_history(
@@ -273,7 +268,6 @@ async def get_conversation_history(
 async def put_conversation_history(
     authorization: Annotated[User, Depends(verify_access_token)],
     jiva_repository: Annotated[JivaRepository, Depends(get_jiva_repo)],
-    translator: Annotated[Translator, Depends(get_translator)],
     feedback_update_request: FeedbackUpdateRequest,
 ):
     await jiva_repository.put_feedback_into_conversation(
@@ -290,7 +284,6 @@ async def put_conversation_history(
 async def update_bookmark(
     authorization: Annotated[User, Depends(verify_access_token)],
     jiva_repository: Annotated[JivaRepository, Depends(get_jiva_repo)],
-    translator: Annotated[Translator, Depends(get_translator)],
     bookmark_update_request: BookmarkUpdate
 ):
     await jiva_repository.update_bookmark(
@@ -319,7 +312,6 @@ async def update_bookmark(
 async def post_conversation_history(
     authorization: Annotated[User, Depends(verify_access_token)],
     jiva_repository: Annotated[JivaRepository, Depends(get_jiva_repo)],
-    translator: Annotated[Translator, Depends(get_translator)],
     conversation_history: ConversationHistory,
 ):
     message_id = await jiva_repository.insert_conversation_history(
@@ -345,7 +337,6 @@ async def post_conversation_history(
 async def delete_conversation_history(
     authorization: Annotated[User, Depends(verify_access_token)],
     jiva_repository: Annotated[JivaRepository, Depends(get_jiva_repo)],
-    translator: Annotated[Translator, Depends(get_translator)],
     email_id: str,
 ):
     await jiva_repository.delete_conversation_history(email_id=email_id)
@@ -361,7 +352,6 @@ async def delete_conversation_history(
 async def delete_bookmark(
     authorization: Annotated[User, Depends(verify_access_token)],
     jiva_repository: Annotated[JivaRepository, Depends(get_jiva_repo)],
-    translator: Annotated[Translator, Depends(get_translator)],
     email_id: str,
     bookmark_id: str
 ):
@@ -378,7 +368,6 @@ async def delete_bookmark(
 async def get_bookmarks(
     authorization: Annotated[User, Depends(verify_access_token)],
     jiva_repository: Annotated[JivaRepository, Depends(get_jiva_repo)],
-    translator: Annotated[Translator, Depends(get_translator)],
     email_id: str,
 ):
     bookmark_list = await jiva_repository.get_bookmarks(
@@ -394,7 +383,6 @@ async def get_bookmarks(
 async def post_bookmark(
     authorization: Annotated[User, Depends(verify_access_token)],
     jiva_repository: Annotated[JivaRepository, Depends(get_jiva_repo)],
-    translator: Annotated[Translator, Depends(get_translator)],
     bookmark: Bookmark,
 ):
     bookmark_id = await jiva_repository.insert_bookmark(
@@ -424,7 +412,6 @@ async def post_bookmark(
 async def get_opened_documents(
     authorization: Annotated[User, Depends(verify_access_token)],
     jiva_repository: Annotated[JivaRepository, Depends(get_jiva_repo)],
-    translator: Annotated[Translator, Depends(get_translator)],
     email_id: str,
 ):
     opened_documents = await jiva_repository.get_opened_documents(email_id=email_id)
@@ -438,7 +425,6 @@ async def get_opened_documents(
 async def post_opened_documents(
     authorization: Annotated[User, Depends(verify_access_token)],
     jiva_repository: Annotated[JivaRepository, Depends(get_jiva_repo)],
-    translator: Annotated[Translator, Depends(get_translator)],
     opened_documents: OpenedDocuments,
 ):
     await jiva_repository.insert_opened_documents(
@@ -459,7 +445,6 @@ async def post_opened_documents(
 async def delete_opened_documents(
     authorization: Annotated[User, Depends(verify_access_token)],
     jiva_repository: Annotated[JivaRepository, Depends(get_jiva_repo)],
-    translator: Annotated[Translator, Depends(get_translator)],
     email_id: str,
     document_id: str,
 ):
@@ -475,7 +460,6 @@ async def delete_opened_documents(
 @user_app.post("/query-response-feedback", include_in_schema=False)
 async def post_query_response_feedback(
     jiva_repository: Annotated[JivaRepository, Depends(get_jiva_repo)],
-    translator: Annotated[Translator, Depends(get_translator)],
     query: str,
     document_title: str,
     feedback: bool,

@@ -34,7 +34,6 @@ class DocumentSupportingMetadata(BaseModel):
 class DocumentMetaData(BaseModel):
     id: str = ""
     title: str
-    translated_title:  Dict[str, str] = {}
     original_file_name: str
     source: Optional[str] = None
     original_format: DocumentFormat
@@ -45,6 +44,7 @@ class DocumentMetaData(BaseModel):
     related_entity: Optional[str] = None
     related_entity_title: Optional[str] = None
     extra_data: Dict[str, str] = {}
+    translated_data: Dict[str, Dict] = {}
     supportings: Dict[str, DocumentSupportingMetadata] = {}
 
     def get_extra_data(self, field_name: str) -> Optional[str]:

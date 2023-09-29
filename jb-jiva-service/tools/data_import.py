@@ -189,6 +189,22 @@ async def upload_document(jiva_library: Library, csv_file_name: str):
         counter += 1
 
 
+# TODO: map the translated data to the meta data and update it
+async def update_metadata(jiva_library: Library):
+    catalog = await jiva_library.catalog()
+    for cat in catalog:
+        meta_data = catalog[cat]
+        meta_data.translated_data = {
+            "title": {
+                "hi": "bye",
+                "kn": "hello"
+            },
+        }
+        print(meta_data)
+        print("\n\n")
+        break
+
+
 if __name__ == "__main__":
     load_dotenv()
     jiva_library = Library(id="jiva",
@@ -197,4 +213,5 @@ if __name__ == "__main__":
                                 base_path=os.environ["JIVA_LIBRARY_PATH"]))
     # Run the below command each time once for new sheets
     # convert_google_sheets_meta_data_to_csv(required_sheet_name="Data_Arushi")
-    asyncio.run(upload_document(jiva_library=jiva_library, csv_file_name="Data_Arushi.csv"))
+    # asyncio.run(upload_document(jiva_library=jiva_library, csv_file_name="Data_Arushi.csv"))
+    asyncio.run(update_metadata(jiva_library=jiva_library))
