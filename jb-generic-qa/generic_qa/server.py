@@ -38,6 +38,7 @@ from .server_helper import (
     get_translator,
     User,
 )
+from prometheus_fastapi_instrumentator import Instrumentator
 # from .server_middleware import ApiKeyMiddleware
 
 init_env()
@@ -87,6 +88,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+Instrumentator().instrument(app).expose(app)
 # app.add_middleware(ApiKeyMiddleware, tenant_repository=get_tenant_repository())
 
 

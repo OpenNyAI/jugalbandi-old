@@ -46,6 +46,7 @@ docx2txt = "^0.8"
 scikit-learn = "^1.2.2"
 jb-storage = {path = "../packages/jb-storage", develop = true}
 jb-tenant = {path = "../packages/jb-tenant", develop = true}
+prometheus-fastapi-instrumentator = "^6.1.0"
 
 [tool.pytest.ini_options]
 pythonpath = [
