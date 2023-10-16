@@ -38,6 +38,9 @@ pandas = "^2.1.1"
 roman = "^4.1"
 jb-translator = {path = "../packages/jb-translator", develop = true}
 gspread = "^5.11.2"
+langchain = "0.0.313"
+faiss-cpu = "^1.7.4"
+tiktoken = "^0.5.1"
 
 [tool.pytest.ini_options]
 pythonpath = [

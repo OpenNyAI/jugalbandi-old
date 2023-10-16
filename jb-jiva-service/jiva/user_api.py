@@ -12,6 +12,7 @@ from .model import (
     QueryResult,
     DocumentResponseItem,
     SectionResponseItem,
+    GeneralResponseItem,
     ConversationHistory,
     OpenedDocuments,
     FeedbackUpdateRequest,
@@ -22,7 +23,8 @@ from .helper import (
   get_jiva_repo,
   verify_access_token,
   get_library,
-  get_translator
+  get_translator,
+  classify_query
 )
 from .model import User
 from fastapi.middleware.cors import CORSMiddleware
@@ -78,11 +80,19 @@ async def query(
         ]
         return QueryResult(items=section_response)  # type: ignore
     else:
-        responses = await jiva_library.search_titles(query)
-        document_response = [
-            DocumentResponseItem(metadata=response) for response in responses
-        ]
-        return QueryResult(items=document_response)  # type: ignore
+        query_type = await classify_query(query)
+        if "Non Descriptive Search" in query_type:
+            responses = await jiva_library.search_titles(query)
+            document_response = [
+                DocumentResponseItem(metadata=response) for response in responses
+            ]
+            return QueryResult(items=document_response)  # type: ignore
+        else:
+            response = await jiva_library.general_search(query)
+            general_response = [
+                GeneralResponseItem(result=response)
+            ]
+            return QueryResult(items=general_response)  # type: ignore
 
 
 @user_app.get(

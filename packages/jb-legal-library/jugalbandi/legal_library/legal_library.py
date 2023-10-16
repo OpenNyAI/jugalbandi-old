@@ -12,6 +12,8 @@ from jugalbandi.core.errors import (
     InternalServerException,
 )
 from sklearn.feature_extraction.text import TfidfVectorizer
+from langchain.vectorstores.faiss import FAISS
+from langchain.embeddings.openai import OpenAIEmbeddings
 import re
 import os
 import openai
@@ -178,8 +180,30 @@ class LegalLibrary(Library):
                                        start_page=section["Start page"],
                                        metadata=document_metadata)
 
+    async def _generate_response(self, docs: list, query: str):
+        contexts = [document.page_content for document in docs]
+        augmented_query = (
+            'Information to search for answers:\n\n' +
+            "\n\n".join(context for context in contexts) + "\n\n-----\n\n" + '"""'
+            "\nQuery: " + query
+        )
+        system_rules = (
+            "You are a helpful assistant who helps with answering questions "
+            "based on the provided information. If the information cannot be found "
+            "in the text provided, you admit that I don't know"
+        )
+        res = openai.ChatCompletion.create(
+            model="gpt-3.5-turbo",
+            messages=[
+                {"role": "system", "content": system_rules},
+                {"role": "user", "content": augmented_query},
+            ],
+        )
+        return res["choices"][0]["message"]["content"]
+
     async def search_titles(self, query: str) -> List[DocumentMetaData]:
         processed_query = await self._preprocess_query(query)
+        processed_query = processed_query.strip()
         catalog = await self.catalog()
         titles_list = [catalog[cat].title for cat in catalog]
 
@@ -248,3 +272,11 @@ class LegalLibrary(Library):
             return document_sections
         else:
             raise IncorrectInputException("Incorrect input query format")
+
+    async def general_search(self, query: str):
+        processed_query = await self._preprocess_query(query)
+        processed_query = processed_query.strip()
+        await self.download_index_files("index.faiss", "index.pkl")
+        vector_db = FAISS.load_local("indexes", OpenAIEmbeddings())
+        docs = vector_db.similarity_search(query=query, k=5)
+        return await self._generate_response(docs, processed_query)

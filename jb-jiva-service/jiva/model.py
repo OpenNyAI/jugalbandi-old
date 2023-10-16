@@ -13,8 +13,13 @@ class SectionResponseItem(BaseModel):
     section: DocumentSection
 
 
+class GeneralResponseItem(BaseModel):
+    query_item_type: Literal["general"] = "general"
+    result: str
+
+
 QueryResponseItem = Annotated[
-    Union[DocumentResponseItem, SectionResponseItem],
+    Union[DocumentResponseItem, SectionResponseItem, GeneralResponseItem],
     Field(discriminator="query_item_type"),
 ]
 

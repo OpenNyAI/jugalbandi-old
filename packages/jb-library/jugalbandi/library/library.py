@@ -10,6 +10,7 @@ from jugalbandi.storage import Storage
 from jugalbandi.core import aiocachedmethod
 from cachetools import TTLCache, cachedmethod
 import logging
+from aiofiles import os as aiofiles_os
 
 
 logger = logging.getLogger(__name__)
@@ -85,9 +86,10 @@ class Library:
         cat: Dict[str, DocumentMetaData] = {}
 
         async def _add_metadata(doc_id):
-            document = self.get_document(doc_id)
-            metadata = await document.read_metadata()
-            cat[doc_id] = metadata
+            if doc_id != "indexes":
+                document = self.get_document(doc_id)
+                metadata = await document.read_metadata()
+                cat[doc_id] = metadata
 
         async with asyncio.TaskGroup() as taskgroup:
             async for doc_id in self.store.list_subfolders(self.id):
@@ -111,6 +113,17 @@ class Library:
 
     async def remove_document(self, document_id: str):
         return await self.store.remove_file(self._file_path(document_id))
+
+    async def download_index_files(self, *filenames: str):
+        if not await aiofiles_os.path.exists("indexes"):
+            await aiofiles_os.makedirs("indexes", exist_ok=True)
+        for filename in filenames:
+            temp_file_path = "indexes/" + filename
+            if not await aiofiles_os.path.exists(temp_file_path):
+                index_file_name = self._file_path(temp_file_path)
+                file_content = await self._download(index_file_name)
+                async with aiofiles.open(temp_file_path, "wb") as f:
+                    await f.write(file_content)
 
     def get_document(self, document_id: str):
         return Document(self, document_id)

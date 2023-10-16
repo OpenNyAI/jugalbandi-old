@@ -14,6 +14,7 @@ from .db import JivaRepository
 from .model import User
 from typing import Annotated
 import os
+import openai
 from sendgrid import SendGridAPIClient
 from sendgrid.helpers.mail import Mail, Email, To, Content
 
@@ -180,3 +181,22 @@ async def send_email(
     response = sg.client.mail.send.post(request_body=mail_json)
     print(response.status_code)
     print(response.headers)
+
+
+async def classify_query(query: str) -> str:
+    system_rules = (
+        "You are a classifier assistant who helps with classifying the given query."
+        "The queries can be classified into the following categories: "
+        "Descriptive Search, Non Descriptive Search."
+        "If the given query is a interrogative sentence, it is a Descriptive Search."
+        "Else it is a Non Descriptive Search."
+        "Return the category as result."
+    )
+    res = openai.ChatCompletion.create(
+        model="gpt-3.5-turbo",
+        messages=[
+            {"role": "system", "content": system_rules},
+            {"role": "user", "content": query},
+        ],
+    )
+    return res["choices"][0]["message"]["content"]
