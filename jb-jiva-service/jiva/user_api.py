@@ -67,8 +67,10 @@ async def query(
     jiva_library: Annotated[LegalLibrary, Depends(get_library)],
     translator: Annotated[Translator, Depends(get_translator)],
     query: str,
-    language: Language,
+    # language: Language,
 ):
+    # TODO: Quick fix for deployment
+    language = Language.EN
     if language != Language.EN:
         query = await translator.translate_text(query, language, Language.EN)
     pattern = re.compile(r"\b[Ss]ec(?:tion)?", re.IGNORECASE)
@@ -137,8 +139,10 @@ async def get_document(
 async def get_documents(
     authorization: Annotated[User, Depends(verify_access_token)],
     jiva_library: Annotated[LegalLibrary, Depends(get_library)],
-    language: Language,
+    # language: Language,
 ):
+    # TODO: Quick fix for deployment
+    language = Language.EN
     catalog = await jiva_library.catalog()
     if language in [language.KN, language.HI]:
         documents = [DocumentInfo(id=cat, title=catalog[cat].translated_data['title'][language.value]) for cat in catalog]

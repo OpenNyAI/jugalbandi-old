@@ -83,7 +83,7 @@ class Library:
 
     @aiocachedmethod(operator.attrgetter("_directory_cache"))
     async def catalog(self):
-        cat: Dict[str, DocumentMetaData] = {}
+        cat: Dict[str, DocumentMetaData] = {}  # type: ignore
 
         async def _add_metadata(doc_id):
             if doc_id != "indexes":
@@ -139,10 +139,8 @@ class Library:
 class LibraryFileType(str, Enum):
     DEFAULT = ""
     SECTIONS = "section"
-    PIPELINE = "pipeline"
     SUPPORTING = "supporting"
     METADATA = "metadata"
-    TASK = "task"
 
 
 class LibraryFileNameError(Exception):
@@ -164,7 +162,7 @@ class Document:
             metadata = await self.read_metadata()
             format = metadata.original_format
 
-        return self._file_path(f"{self.id}.{format.value}")
+        return self._file_path(f"{self.id}.{format.value}")  # type: ignore
 
     async def _file_path_by_type_format(
         self,
@@ -181,25 +179,10 @@ class Document:
                 return self._file_path(file_path)
         if file_type == LibraryFileType.METADATA:
             return self._file_path("metadata.json")
-        elif file_type == LibraryFileType.PIPELINE:
-            if pipeline_name is not None:
-                return self._file_path("__pipeline__", pipeline_name, file_path)
-            else:
-                raise LibraryFileNameError(
-                    f"pipeline_name must be provided for pipeline file {file_path}"
-                )
         elif file_type == LibraryFileType.SECTIONS:
             return self._file_path("sections.json")
         elif file_type == LibraryFileType.SUPPORTING:
-            return self._file_path("__support__", file_path)
-        elif file_type == LibraryFileType.TASK:
-            if task_name is not None:
-                return self._file_path("__task__", task_name, file_path)
-            else:
-                raise LibraryFileNameError(
-                    f"task_name must be provided for task file {file_path}"
-                )
-            return self._file_path("__task__", file_path)
+            return self._file_path("__support__", file_path)  # type: ignore
         else:
             raise LibraryFileNameError(
                 f"Unknown file type for {file_path} - {file_type}"
@@ -283,36 +266,6 @@ class Document:
             async with aiofiles.open(local_file_path, "wb") as f:
                 await f.write(content)
 
-    async def write_pipeline_state(self, pipeline_name: str, content: bytes):
-        return await self._write(
-            content,
-            file_path="state.json",
-            pipeline_name=pipeline_name,
-            file_type=LibraryFileType.PIPELINE,
-        )
-
-    async def read_pipeline_state(self, pipeline_name: str) -> Optional[bytes]:
-        return await self._read(
-            file_path="state.json",
-            pipeline_name=pipeline_name,
-            file_type=LibraryFileType.PIPELINE,
-        )
-
-    async def write_task_file(self, task_name: str, file_path: str, content: bytes):
-        return await self._write(
-            content,
-            file_path=file_path,
-            task_name=task_name,
-            file_type=LibraryFileType.TASK,
-        )
-
-    async def read_task_file(self, task_name: str, file_path: str) -> Optional[bytes]:
-        return await self._read(
-            file_path=file_path,
-            task_name=task_name,
-            file_type=LibraryFileType.TASK,
-        )
-
     async def write_supporting_document(
         self,
         supporting_metadata: DocumentSupportingMetadata,
@@ -380,6 +333,7 @@ class Document:
                 await self.write_metadata(metadata)
             else:
                 logger.warn(f"Supporting file not in metadata - {file_path}")
+        return public_url
 
     async def public_url(
         self,
