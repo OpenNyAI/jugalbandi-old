@@ -83,6 +83,7 @@ async def query(
         return QueryResult(items=section_response)  # type: ignore
     else:
         query_type = await classify_query(query)
+        print(query_type)
         if "Non Descriptive Search" in query_type:
             responses = await jiva_library.search_titles(query)
             document_response = [

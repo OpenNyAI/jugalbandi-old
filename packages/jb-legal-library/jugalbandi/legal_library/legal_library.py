@@ -20,6 +20,7 @@ import openai
 import json
 import roman
 import numpy as np
+import tiktoken
 
 
 class InvalidActMetaData(Exception):
@@ -183,15 +184,23 @@ class LegalLibrary(Library):
     async def _generate_response(self, docs: list, query: str):
         contexts = [document.page_content for document in docs]
         augmented_query = (
-            'Information to search for answers:\n\n' +
-            "\n\n".join(context for context in contexts) + "\n\n-----\n\n" + '"""'
-            "\nQuery: " + query
+            "Information to search for answers:\n\n"
+            "\n\n-----\n\n".join(context for context in contexts) +
+            "\n\n-----\n\nQuery: " + query
         )
         system_rules = (
             "You are a helpful assistant who helps with answering questions "
             "based on the provided information. If the information cannot be found "
             "in the text provided, you admit that I don't know"
         )
+        encoding = tiktoken.get_encoding('cl100k_base')
+        num_tokens = len(encoding.encode(augmented_query))
+        if num_tokens > 4000:
+            augmented_query = (
+                "Information to search for answers:\n\n"
+                "\n\n-----\n\n".join(contexts[i] for i in range(len(contexts)-1)) +
+                "\n\n-----\n\nQuery: " + query
+            )
         res = openai.ChatCompletion.create(
             model="gpt-3.5-turbo",
             messages=[

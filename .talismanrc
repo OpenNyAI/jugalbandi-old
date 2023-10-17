@@ -90,7 +90,7 @@ fileignoreconfig:
 - filename: packages/jb-legal-library/jugalbandi/legal_library/legal_library.py
   checksum: a1a52cc75ba56d88e8c7141455c0bcc4aa6dbcc88720d1c284e93338ce28b9c9
 - filename: packages/jb-legal-library/poetry.lock
-  checksum: 3fd638a9c55985ed3f28decac6abe14942ac9365677cc23e3dfb4a6617b3b246
+  checksum: 0505b76dbb24026d6f893ced7a248edcad64837f1e7eecca70d8d46e229bee59
 - filename: packages/jb-legal-library/tests/import_lib/abcd.pdf
   checksum: bef3ef91bf45965d566009ddd34afc1ef3151f40706f1837b275cc6fed91c7c8
 - filename: packages/jb-legal-library/tests/import_lib/index.csv
