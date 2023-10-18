@@ -1628,6 +1628,26 @@ type = "directory"
 url = "../packages/jb-core"
 
 [[package]]
+name = "jb-jiva-repository"
+version = "0.1.0"
+description = ""
+optional = false
+python-versions = ">=3.10, <4.0.0"
+files = []
+develop = true
+
+[package.dependencies]
+asyncpg = "0.28.0"
+cachetools = "5.3.1"
+jb-core = {path = "../jb-core", develop = true}
+pydantic = "^1.10.9"
+pytz = "^2023.3"
+
+[package.source]
+type = "directory"
+url = "../packages/jb-jiva-repository"
+
+[[package]]
 name = "jb-legal-library"
 version = "0.1.0"
 description = ""
@@ -3785,4 +3805,4 @@ multidict = ">=4.0"
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.10, <3.13"
-content-hash = "d46046f13c6be92b265626d238adce0e85a1b4061e0d444a1dddb1e652cc5452"
+content-hash = "bea9871f764ebbe7c77a0e9b55374f43781a6799ab12a367a3793b3a8eea6814"

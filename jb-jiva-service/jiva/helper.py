@@ -10,7 +10,7 @@ from jugalbandi.translator import (
     GoogleTranslator,
     DhruvaTranslator,
 )
-from .db import JivaRepository
+from jugalbandi.jiva_repository import JivaRepository
 from .model import User
 from typing import Annotated
 import os

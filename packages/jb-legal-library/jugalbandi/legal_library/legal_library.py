@@ -181,7 +181,8 @@ class LegalLibrary(Library):
                                        start_page=section["Start page"],
                                        metadata=document_metadata)
 
-    async def _generate_response(self, docs: list, query: str):
+    async def _generate_response(self, docs: list, query: str,
+                                 past_queries_history: bool):
         contexts = [document.page_content for document in docs]
         augmented_query = (
             "Information to search for answers:\n\n"
@@ -193,20 +194,20 @@ class LegalLibrary(Library):
             "based on the provided information. If the information cannot be found "
             "in the text provided, you admit that I don't know"
         )
+        messages = [{"role": "system", "content": system_rules}]
+
         encoding = tiktoken.get_encoding('cl100k_base')
         num_tokens = len(encoding.encode(augmented_query))
-        if num_tokens > 4000:
+        if num_tokens > 3500:
             augmented_query = (
                 "Information to search for answers:\n\n"
                 "\n\n-----\n\n".join(contexts[i] for i in range(len(contexts)-1)) +
                 "\n\n-----\n\nQuery: " + query
             )
+        messages.append({"role": "user", "content": augmented_query})
         res = openai.ChatCompletion.create(
             model="gpt-3.5-turbo",
-            messages=[
-                {"role": "system", "content": system_rules},
-                {"role": "user", "content": augmented_query},
-            ],
+            messages=messages,
         )
         return res["choices"][0]["message"]["content"]
 
@@ -288,4 +289,5 @@ class LegalLibrary(Library):
         await self.download_index_files("index.faiss", "index.pkl")
         vector_db = FAISS.load_local("indexes", OpenAIEmbeddings())
         docs = vector_db.similarity_search(query=query, k=5)
-        return await self._generate_response(docs, processed_query)
+        return await self._generate_response(docs=docs, query=processed_query,
+                                             past_queries_history=True)

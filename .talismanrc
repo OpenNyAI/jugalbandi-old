@@ -44,7 +44,7 @@ fileignoreconfig:
 - filename: jb-jiva-service/jiva/helper.py
   checksum: 8daa6610c9785b4673793ce242daf9391f3e6794a9ef1c187de5c30c16499c17
 - filename: jb-jiva-service/poetry.lock
-  checksum: 210f170dc837b21f20518bbd3b024f20facb05b3933b2aaf39b41f35a04a5c6c
+  checksum: fe4109ec1af71df45c3a30efbb915f4fba040a7ee6664da6a520855ce93e1c79
 - filename: jb-jiva-service/tests/abcd.pdf
   checksum: e336625634fe20bebec17a15c49018a9c6ae0c682bffc2e9e78dd310519a46fc
 - filename: jb-jiva-service/tools/data_import.py
@@ -85,6 +85,8 @@ fileignoreconfig:
   checksum: 37e6bdc04f4f5844694d1ae53850d02e39614bdee0faef4c3b6e4464b5cf7186
 - filename: packages/jb-feedback/poetry.lock
   checksum: f09d8a03993080b0643480a1eab37f27e38f4002e7fde6aa165213fbf63e813a
+- filename: packages/jb-jiva-repository/poetry.lock
+  checksum: 187b2b6b049576f40d4a92c4ba1f92e6994cfa6f6cd3a6d139b421c99d0ddc45
 - filename: packages/jb-legal-library/jugalbandi/legal_library/csv_import.py
   checksum: 5074d69d723f6e2bc0de84e0fddaaa234164f9224138601776694069142e9c86
 - filename: packages/jb-legal-library/jugalbandi/legal_library/legal_library.py

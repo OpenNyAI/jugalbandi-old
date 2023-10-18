@@ -5,7 +5,7 @@ import json
 from typing import Annotated, Optional
 from fastapi import Depends, FastAPI, Response
 from fastapi.responses import JSONResponse
-from jiva.db import JivaRepository
+from jugalbandi.jiva_repository import JivaRepository
 from .model import (
     DocumentInfo,
     DocumentsList,

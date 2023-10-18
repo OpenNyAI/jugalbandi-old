@@ -2,7 +2,7 @@ import operator
 from typing import Dict
 import asyncpg
 from jugalbandi.core.caching import aiocachedmethod
-from .db_settings import get_jiva_service_settings
+from .jiva_repository_settings import get_jiva_service_settings
 from datetime import datetime
 
 
@@ -86,6 +86,14 @@ class JivaRepository:
                     section_name TEXT,
                     section_page_number TEXT,
                     feedback BOOLEAN
+                );
+                CREATE TABLE IF NOT EXISTS conversation_logs (
+                    id SERIAL PRIMARY KEY,
+                    email_id TEXT,
+                    query TEXT,
+                    response TEXT,
+                    created_at TIMESTAMPTZ NOT NULL,
+                    FOREIGN KEY (email_id) REFERENCES users (email_id)
                 )
             """
             )
@@ -96,7 +104,7 @@ class JivaRepository:
             return await connection.fetchrow(
                 """
                 SELECT * FROM users
-                WHERE email_id=$1
+                WHERE email_id=$1;
                 """,
                 email_id,
             )
@@ -109,7 +117,7 @@ class JivaRepository:
             return await connection.fetchrow(
                 """
                 SELECT * FROM reset_password
-                where id = $1 and verification_code = $2
+                where id = $1 and verification_code = $2;
                 """,
                 reset_id,
                 verification_code,
@@ -133,7 +141,7 @@ class JivaRepository:
             return await connection.fetch(
                 """
                 SELECT * FROM conversation_history
-                WHERE email_id = $1 ORDER BY message_date ASC, message_time ASC;;
+                WHERE email_id = $1 ORDER BY message_date ASC, message_time ASC;
                 """,
                 email_id,
             )
@@ -156,6 +164,23 @@ class JivaRepository:
                 """
                 SELECT * FROM opened_documents
                 WHERE email_id = $1;
+                """,
+                email_id,
+            )
+
+    async def get_conversation_logs(self, email_id: str):
+        engine = await self._get_engine()
+        async with engine.acquire() as connection:
+            return await connection.fetch(
+                """
+                SELECT * FROM (
+                    SELECT *
+                    FROM conversation_logs
+                    WHERE email_id = $1
+                    ORDER BY created_at DESC
+                    LIMIT 20
+                )
+                ORDER BY id ASC;
                 """,
                 email_id,
             )
@@ -415,4 +440,21 @@ class JivaRepository:
                 section_name,
                 section_page_number,
                 feedback
+            )
+
+    async def insert_conversation_logs(self,
+                                       email_id: str,
+                                       query: str,
+                                       response: str):
+        engine = await self._get_engine()
+        async with engine.acquire() as connection:
+            return await connection.fetchval(
+                """
+                INSERT INTO conversation_logs
+                (email_id, query, response)
+                VALUES ($1, $2, $3);
+                """,
+                email_id,
+                query,
+                response
             )
