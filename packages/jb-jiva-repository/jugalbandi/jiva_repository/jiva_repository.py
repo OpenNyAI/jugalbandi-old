@@ -92,7 +92,7 @@ class JivaRepository:
                     email_id TEXT,
                     query TEXT,
                     response TEXT,
-                    created_at TIMESTAMPTZ NOT NULL,
+                    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
                     FOREIGN KEY (email_id) REFERENCES users (email_id)
                 )
             """
@@ -179,7 +179,7 @@ class JivaRepository:
                     WHERE email_id = $1
                     ORDER BY created_at DESC
                     LIMIT 20
-                )
+                ) AS subquery
                 ORDER BY id ASC;
                 """,
                 email_id,

@@ -18,6 +18,7 @@ openai = "^0.27.8"
 roman = "^4.1"
 langchain = "^0.0.313"
 tiktoken = "^0.5.1"
+jb-jiva-repository = {path = "../jb-jiva-repository", develop = true}
 
 [tool.poetry.group.dev.dependencies]
 black = "^23.3.0"

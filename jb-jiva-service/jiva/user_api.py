@@ -91,7 +91,7 @@ async def query(
             ]
             return QueryResult(items=document_response)  # type: ignore
     else:
-        response = await jiva_library.general_search(query)
+        response = await jiva_library.general_search(query, authorization.email_id)
         general_response = [
             GeneralResponseItem(result=response)
         ]

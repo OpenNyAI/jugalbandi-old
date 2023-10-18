@@ -11,6 +11,7 @@ from jugalbandi.core.errors import (
     IncorrectInputException,
     InternalServerException,
 )
+from jugalbandi.jiva_repository import JivaRepository
 from sklearn.feature_extraction.text import TfidfVectorizer
 from langchain.vectorstores.faiss import FAISS
 from langchain.embeddings.openai import OpenAIEmbeddings
@@ -112,6 +113,7 @@ class LegalLibrary(Library):
     def __init__(self, id: str, store: Storage):
         super(LegalLibrary, self).__init__(id, store)
         self._act_cache: TTLCache = TTLCache(2, 900)
+        self.jiva_repository = JivaRepository()
 
     @aiocachedmethod(operator.attrgetter("_act_cache"))
     async def act_catalog(self) -> Dict[str, ActMetaData]:
@@ -182,7 +184,7 @@ class LegalLibrary(Library):
                                        metadata=document_metadata)
 
     async def _generate_response(self, docs: list, query: str,
-                                 past_queries_history: bool):
+                                 email_id: str, past_conversations_history: bool):
         contexts = [document.page_content for document in docs]
         augmented_query = (
             "Information to search for answers:\n\n"
@@ -195,6 +197,13 @@ class LegalLibrary(Library):
             "in the text provided, you admit that I don't know"
         )
         messages = [{"role": "system", "content": system_rules}]
+
+        if past_conversations_history:
+            past_conversations = await self.jiva_repository.get_conversation_logs(
+                email_id=email_id)
+            for convo in past_conversations:
+                messages.append({"role": "user", "content": convo['query']})
+                messages.append({"role": "assistant", "content": convo['response']})
 
         encoding = tiktoken.get_encoding('cl100k_base')
         num_tokens = len(encoding.encode(augmented_query))
@@ -209,7 +218,11 @@ class LegalLibrary(Library):
             model="gpt-3.5-turbo",
             messages=messages,
         )
-        return res["choices"][0]["message"]["content"]
+        response = res["choices"][0]["message"]["content"]
+        await self.jiva_repository.insert_conversation_logs(email_id=email_id,
+                                                            query=query,
+                                                            response=response)
+        return response
 
     async def search_titles(self, query: str) -> List[DocumentMetaData]:
         processed_query = await self._preprocess_query(query)
@@ -283,11 +296,12 @@ class LegalLibrary(Library):
         else:
             raise IncorrectInputException("Incorrect input query format")
 
-    async def general_search(self, query: str):
+    async def general_search(self, query: str, email_id: str):
         processed_query = await self._preprocess_query(query)
         processed_query = processed_query.strip()
         await self.download_index_files("index.faiss", "index.pkl")
         vector_db = FAISS.load_local("indexes", OpenAIEmbeddings())
         docs = vector_db.similarity_search(query=query, k=5)
         return await self._generate_response(docs=docs, query=processed_query,
-                                             past_queries_history=True)
+                                             email_id=email_id,
+                                             past_conversations_history=True)
