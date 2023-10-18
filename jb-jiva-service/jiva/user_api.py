@@ -74,28 +74,28 @@ async def query(
     if language != Language.EN:
         query = await translator.translate_text(query, language, Language.EN)
     pattern = re.compile(r"\b[Ss]ec(?:tion)?", re.IGNORECASE)
-    matches = re.search(pattern, query)
-    if matches:
-        responses = await jiva_library.search_sections(query)
-        section_response = [
-            SectionResponseItem(section=response) for response in responses
-        ]
-        return QueryResult(items=section_response)  # type: ignore
-    else:
-        query_type = await classify_query(query)
-        print(query_type)
-        if "Non Descriptive Search" in query_type:
+    query_type = await classify_query(query)
+    print(query_type)
+    if "Non Descriptive Search" in query_type:
+        matches = re.search(pattern, query)
+        if matches:
+            responses = await jiva_library.search_sections(query)
+            section_response = [
+                SectionResponseItem(section=response) for response in responses
+            ]
+            return QueryResult(items=section_response)  # type: ignore
+        else:
             responses = await jiva_library.search_titles(query)
             document_response = [
                 DocumentResponseItem(metadata=response) for response in responses
             ]
             return QueryResult(items=document_response)  # type: ignore
-        else:
-            response = await jiva_library.general_search(query)
-            general_response = [
-                GeneralResponseItem(result=response)
-            ]
-            return QueryResult(items=general_response)  # type: ignore
+    else:
+        response = await jiva_library.general_search(query)
+        general_response = [
+            GeneralResponseItem(result=response)
+        ]
+        return QueryResult(items=general_response)  # type: ignore
 
 
 @user_app.get(
