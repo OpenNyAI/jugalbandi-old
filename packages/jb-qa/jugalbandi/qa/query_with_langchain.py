@@ -106,7 +106,11 @@ async def querying_with_langchain_gpt4(document_collection: DocumentCollection,
                                         OpenAIEmbeddings())  # type: ignore
         documents = search_index.similarity_search(query, k=5)
         contexts = [document.page_content for document in documents]
-        augmented_query = "\n\n---\n\n".join(contexts) + "\n\n-----\n\n" + query
+        augmented_query = augmented_query = (
+                "Information to search for answers:\n\n"
+                "\n\n-----\n\n".join(contexts) +
+                "\n\n-----\n\nQuery:" + query
+            )
 
         if prompt != "":
             system_rules = prompt
@@ -146,11 +150,12 @@ async def querying_with_langchain_gpt3_5(document_collection: DocumentCollection
     await document_collection.download_index_files("langchain", "index.faiss",
                                                    "index.pkl")
     index_folder_path = document_collection.local_index_folder("langchain")
+
     if model_size == "16k":
         model_name = "gpt-3.5-turbo-16k"
     else:
         model_name = "gpt-3.5-turbo"
-    source_text_list = []
+
     try:
         search_index = FAISS.load_local(index_folder_path,
                                         OpenAIEmbeddings())  # type: ignore
@@ -165,7 +170,11 @@ async def querying_with_langchain_gpt3_5(document_collection: DocumentCollection
             )
         try:
             contexts = [document.page_content for document in documents]
-            augmented_query = "\n\n---\n\n".join(contexts) + "\n\n-----\n\n" + query
+            augmented_query = (
+                "Information to search for answers:\n\n"
+                "\n\n-----\n\n".join(contexts) +
+                "\n\n-----\n\nQuery:" + query
+            )
             response = openai.ChatCompletion.create(
                 model=model_name,
                 messages=[
@@ -175,7 +184,11 @@ async def querying_with_langchain_gpt3_5(document_collection: DocumentCollection
             )
         except openai.error.InvalidRequestError:
             contexts = [documents[i].page_content for i in range(len(documents)-2)]
-            augmented_query = "\n\n---\n\n".join(contexts) + "\n\n-----\n\n" + query
+            augmented_query = (
+                "Information to search for answers:\n\n"
+                "\n\n-----\n\n".join(contexts) +
+                "\n\n-----\n\nQuery:" + query
+            )
             response = openai.ChatCompletion.create(
                 model=model_name,
                 messages=[

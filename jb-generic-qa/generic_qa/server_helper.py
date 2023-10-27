@@ -155,16 +155,15 @@ api_key_header = APIKeyHeader(name="api_key", auto_error=False)
 async def get_api_key(tenant_repository: Annotated[TenantRepository,
                                                    Depends(get_tenant_repository)],
                       api_key_header: str = Security(api_key_header)):
-    if api_key_header:
-        balance_quota = await tenant_repository.get_balance_quota_from_api_key(api_key_header)
-        if balance_quota is None:
-            if os.environ["ALLOW_INVALID_API_KEY"] != "true":
+    if os.environ["ALLOW_INVALID_API_KEY"] != "true":
+        if api_key_header:
+            balance_quota = await tenant_repository.get_balance_quota_from_api_key(api_key_header)
+            if balance_quota is None:
                 raise UnAuthorisedException("API key is invalid")
-        else:
-            if balance_quota > 0:
-                await tenant_repository.update_balance_quota(api_key_header, balance_quota)
             else:
-                raise QuotaExceededException("You have exceeded the Quota limit")
-    else:
-        if os.environ["ALLOW_INVALID_API_KEY"] != "true":
+                if balance_quota > 0:
+                    await tenant_repository.update_balance_quota(api_key_header, balance_quota)
+                else:
+                    raise QuotaExceededException("You have exceeded the Quota limit")
+        else:
             raise UnAuthorisedException("API Key is missing")

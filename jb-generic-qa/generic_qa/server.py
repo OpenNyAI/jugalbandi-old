@@ -273,7 +273,7 @@ async def query_using_langchain_with_gpt4_and_custom_prompt(
 
 
 @app.get(
-    "/query-using-voice-gpt3-5",
+    "/query-using-voice",
     summary="Query using voice with langchain (GPT-3.5) with custom prompt",
     tags=["Q&A over Document Store"],
 )
@@ -294,6 +294,7 @@ async def query_with_voice_input_gpt3_5(
         input_language=input_language,
         output_format=output_format,
         prompt=prompt,
+        source_text_filtering=False,
     )
 
 
@@ -329,34 +330,6 @@ async def get_rephrased_query(
 ):
     answer = await rephrased_question(query_string)
     return {"given_query": query_string, "rephrased_query": answer}
-
-
-# Temporary GPT-3.5-turbo 4k endpoint
-@app.get(
-    "/query-using-voice-gpt3-5-turbo-4k-16k",
-    summary="Query using voice with langchain (GPT-3.5-Turbo 4k model)",
-    tags=["Q&A over Document Store"],
-)
-async def query_with_voice_input_gpt3_5_turbo_4k_16k(
-    authorization: Annotated[User, Depends(verify_access_token)],
-    langchain_qa_engine: Annotated[QAEngine,
-                                   Depends(get_langchain_gpt35_turbo_qa_engine)],
-    input_language: Language,
-    output_format: MediaFormat,
-    query_text: str = "",
-    audio_url: str = "",
-    prompt: str = "",
-    model_size: str = "4k",
-) -> QueryResponse:
-    return await langchain_qa_engine.query(
-        query=query_text,
-        speech_query_url=audio_url,
-        input_language=input_language,
-        output_format=output_format,
-        source_text_filtering=False,
-        model_size=model_size,
-        prompt=prompt,
-    )
 
 
 @app.get(

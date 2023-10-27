@@ -135,7 +135,7 @@ class LangchainQAEngine:
         speech_query_url: str = "",
         prompt: str = "",
         source_text_filtering: bool = True,
-        model_size: str = "16k",
+        model_size: str = "4k",
         input_language: Language = Language.EN,
         output_format: MediaFormat = MediaFormat.TEXT,
     ) -> QueryResponse:
