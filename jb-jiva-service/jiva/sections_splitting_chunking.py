@@ -2,10 +2,12 @@ import os
 import re
 import fitz
 from oauth2client.service_account import ServiceAccountCredentials
+from langchain.text_splitter import RecursiveCharacterTextSplitter
 from dotenv import load_dotenv
 import gspread
 import regex
 import json
+
 
 # Regex pattern to remove page numbers from parsed PDF text
 page_number_pattern = r'^[\n\s]*\d+[\n\s]*(?!.)'
@@ -235,9 +237,99 @@ def get_central_section_splits(root_dir: str, section_names_data: list):
         json.dump(section_dict, json_file)
 
 
+def sections_chunking():
+    with open("karnataka_section_splits.json", 'r') as file:
+        json_data = file.read()
+
+    sections_dict = json.loads(json_data)
+    # Regex pattern to find section numbers paragraph from parsed PDF text
+    digit_pattern = r'^(\n*\d+-?\[?[A-Z]{0,3}\..*)'
+    # Regex pattern to find section numbers from parsed PDF text
+    section_number_pattern = r'^(\n*\d+-?\[?[A-Z]{0,3}\.)'
+    precursor_sentence_one = "The following contents are part of the {}"
+    precursor_sentence_two = "The following sections are part of the {}"
+    precursor_sentence_three = "The following section is part of the {}"
+    precursor_sentence_four = "The following contents are continuation of section {} of the {}"
+
+    text_splitter = RecursiveCharacterTextSplitter(
+        chunk_size=4000,
+        chunk_overlap=0,
+        separators=["\n \n", "\n\n", "\n", ".", " "]
+    )
+
+    meta_data_list = get_data_from_google_sheets("All Acts")
+    result_dict = {}
+    for key, value in sections_dict.items():
+        print("Filename:", key)
+        for meta_data in meta_data_list:
+            if meta_data['File Name'] == key:
+                title = meta_data['Doc title']
+
+        section_doc = value
+        new_chunks = [section_doc[0]]
+        i = 1
+        while i < len(section_doc):
+            section = section_doc[i]
+            matches = re.findall(digit_pattern, section)
+            if len(matches) == 1:
+                if len(section) < 4000:
+                    flag = False
+                    section = precursor_sentence_two.format(title) + "\n\n\nSection " + section
+                    if i == len(section_doc)-1:
+                        new_chunks.append(section)
+                        break
+
+                    new_section = section
+                    j = 1
+                    while True:
+                        if i+j >= len(section_doc):
+                            flag = True
+                            break
+                        new_section += "\n\n\nSection " + section_doc[i+j]
+                        if len(new_section) > 4000:
+                            new_section = new_section.replace("\n\n\nSection " + section_doc[i+j], "")
+                            flag = True
+                            j -= 1
+                            break
+                        j += 1
+                    if flag is True:
+                        new_chunks.append(new_section)
+                        # print(i, "---------", repr(new_section), "---------", len(new_section))
+                        i += j
+                    else:
+                        new_chunks.append(section)
+                        # print(i, "---------", repr(section), "---------", len(section))
+                else:
+                    section_number_match = re.search(section_number_pattern, section)
+                    section_number = section[section_number_match.start():section_number_match.end()]
+                    section_splits = text_splitter.split_text(section)
+                    sections_list = []
+                    for k in range(len(section_splits)):
+                        if k == 0:
+                            section_split = precursor_sentence_three.format(title) + "\n\n\nSection " + section_splits[k]
+                        else:
+                            section_split = precursor_sentence_four.format(section_number, title) + "\n\n\n" + section_splits[k]
+                        sections_list.append(section_split)
+                    new_chunks += sections_list
+            else:
+                if len(section) > 4000:
+                    section_splits = text_splitter.split_text(section)
+                    section_splits = [precursor_sentence_one.format(title) + "\n\n\n" + section_split for section_split in section_splits]
+                    new_chunks += section_splits
+                else:
+                    section = precursor_sentence_one.format(title) + "\n\n\n" + section
+                    new_chunks.append(section)
+            i += 1
+        result_dict[key] = new_chunks
+
+    with open("central_docs_chunks.json", 'w') as json_file:
+        json.dump(result_dict, json_file)
+
+
 if __name__ == "__main__":
     load_dotenv()
     root_dir = os.environ["ROOT_DIR"]
     section_names_data = get_data_from_google_sheets("Sheet Name")
     # get_karnataka_section_splits(root_dir, section_names_data)
     # get_central_section_splits(root_dir, section_names_data)
+    # sections_chunking()
