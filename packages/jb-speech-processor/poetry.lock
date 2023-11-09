@@ -33,6 +33,21 @@ test = ["anyio[trio]", "coverage[toml] (>=4.5)", "hypothesis (>=4.0)", "mock (>=
 trio = ["trio (<0.22)"]
 
 [[package]]
+name = "azure-cognitiveservices-speech"
+version = "1.32.1"
+description = "Microsoft Cognitive Services Speech SDK for Python"
+optional = false
+python-versions = ">=3.7"
+files = [
+    {file = "azure_cognitiveservices_speech-1.32.1-py3-none-macosx_10_14_x86_64.whl", hash = "sha256:26aa55eb5430f842a1da20dee6c3efe59d27c4209025c579efa63aa438f26298"},
+    {file = "azure_cognitiveservices_speech-1.32.1-py3-none-macosx_11_0_arm64.whl", hash = "sha256:bb3ddca7f6f001d5e807a79c85e7b7553eb99930752a002216fcd344be5da96c"},
+    {file = "azure_cognitiveservices_speech-1.32.1-py3-none-manylinux1_x86_64.whl", hash = "sha256:822b411165cbcf7799967f4858df4258ed6d9836506e93b5c7dda2255b29e7bc"},
+    {file = "azure_cognitiveservices_speech-1.32.1-py3-none-manylinux2014_aarch64.whl", hash = "sha256:27d75095c12077b334fcb35a615d066703ce52adf414a2ccef3f5f402af07138"},
+    {file = "azure_cognitiveservices_speech-1.32.1-py3-none-win32.whl", hash = "sha256:8ae7dfee8d4d7bc8a4cea585ed223a12878751452ed493f8c80fbc34502096c6"},
+    {file = "azure_cognitiveservices_speech-1.32.1-py3-none-win_amd64.whl", hash = "sha256:cdb06dd9fe41a7f05fefec99af59630a90ad2da9f61216160410070c2e309948"},
+]
+
+[[package]]
 name = "black"
 version = "23.7.0"
 description = "The uncompromising code formatter."
@@ -942,4 +957,4 @@ socks = ["PySocks (>=1.5.6,!=1.5.7,<2.0)"]
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.10, <4.0.0"
-content-hash = "502938c0e180790741e29b1e0842cbdd459d68333a3363c56db93755cedbf556"
+content-hash = "fab2d8a6dacd47903426594fc9896d4487207bc42a7d894dc3ae5ce14f9cfbb3"

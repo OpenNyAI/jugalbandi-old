@@ -1,12 +1,14 @@
 import base64
 import httpx
 import os
+import tempfile
 from jugalbandi.core import (
     Language,
     InternalServerException,
 )
 from jugalbandi.audio_converter.converter import convert_wav_bytes_to_mp3_bytes
 from google.cloud import texttospeech, speech
+import azure.cognitiveservices.speech as speechsdk
 from abc import ABC, abstractmethod
 import json
 
@@ -235,6 +237,62 @@ class GoogleSpeechProcessor(SpeechProcessor):
         )
         audio_content = response.audio_content
         return audio_content
+
+
+class AzureSpeechProcessor(SpeechProcessor):
+    def __init__(self):
+        self.language_dict = {
+            "EN" : ["en-US", "en-US-JennyNeural"],
+            "HI" : ["hi-IN", "hi-IN-SwaraNeural"],
+            "BN" : ["bn-IN", "bn-IN-TanishaaNeural"],
+            "GU" : ["gu-IN", "gu-IN-DhwaniNeural"],
+            "MR" : ["mr-IN", "mr-IN-AarohiNeural"],
+            # "OR" : ["or-IN"], STT & TTS Not supported
+            # "PA" : ["pa-IN"],  # TTS not supported
+            "KN" : ["kn-IN", "kn-IN-SapnaNeural"],
+            "ML" : ["ml-IN", "ml-IN-SobhanaNeural"],
+            "TA" : ["ta-IN", "ta-IN-PallaviNeural"],
+            "TE" : ["te-IN", "te-IN-ShrutiNeural"],
+            "AF" : ["af-ZA", "af-ZA-AdriNeural"],
+            "AR" : ["ar-DZ", "ar-DZ-AminaNeural"],
+            "ZH" : ["yue-CN", "yue-CN-XiaoMinNeural"],  # Chinese (Cantonese, Simplified)
+            "FR" : ["fr-FR", "fr-FR-DeniseNeural"],
+            "DE" : ["de-DE", "de-DE-KatjaNeural"],
+            "ID" : ["id-ID", "id-ID-GadisNeural"],
+            "IT" : ["it-IT", "it-IT-ElsaNeural"],
+            "JA" : ["ja-JP", "ja-JP-NanamiNeural"],
+            "KO" : ["ko-KR", "ko-KR-SunHiNeural"],
+            "PT" : ["pt-PT", "pt-PT-RaquelNeural"],
+            "RU" : ["ru-RU", "ru-RU-SvetlanaNeural"],
+            "ES" : ["es-ES", "	es-ES-ElviraNeural"],
+            "TR" : ["tr-TR", "tr-TR-EmelNeural"]
+        }
+        self.speech_config = speechsdk.SpeechConfig(subscription=os.getenv('AZURE_SPEECH_KEY'),
+                                                    region=os.getenv('AZURE_SPEECH_REGION'))
+
+    async def speech_to_text(self, wav_data: bytes, input_language: Language) -> str:
+        language_code = self.language_dict[input_language.name][0]
+        temp_wav_file = tempfile.NamedTemporaryFile()
+        temp_wav_file.write(wav_data)
+        audio_config = speechsdk.AudioConfig(filename=temp_wav_file.name)
+        speech_recognizer = speechsdk.SpeechRecognizer(speech_config=self.speech_config,
+                                                       audio_config=audio_config,
+                                                       language=language_code)
+        result = speech_recognizer.recognize_once_async().get()
+        if temp_wav_file:
+            temp_wav_file.close()
+
+        return result.text
+
+    async def text_to_speech(self, text: str, input_language: Language) -> bytes:
+        voice_language_code = self.language_dict[input_language.name][1]
+        audio_config = speechsdk.audio.AudioOutputConfig(use_default_speaker=True)
+        self.speech_config.speech_synthesis_voice_name = voice_language_code
+        speech_synthesizer = speechsdk.SpeechSynthesizer(speech_config=self.speech_config,
+                                                         audio_config=audio_config)
+        speech_synthesis_result = speech_synthesizer.speak_text_async(text).get()
+
+        return speech_synthesis_result.audio_data
 
 
 class CompositeSpeechProcessor(SpeechProcessor):

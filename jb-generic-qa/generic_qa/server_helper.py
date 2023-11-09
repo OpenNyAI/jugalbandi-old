@@ -24,6 +24,7 @@ from jugalbandi.speech_processor import (
     CompositeSpeechProcessor,
     DhruvaSpeechProcessor,
     GoogleSpeechProcessor,
+    AzureSpeechProcessor,
 )
 from jugalbandi.translator import (
     CompositeTranslator,
@@ -76,7 +77,9 @@ async def get_document_collection(
 
 
 async def get_speech_processor():
-    return CompositeSpeechProcessor(DhruvaSpeechProcessor(), GoogleSpeechProcessor())
+    return CompositeSpeechProcessor(AzureSpeechProcessor(),
+                                    DhruvaSpeechProcessor(),
+                                    GoogleSpeechProcessor())
 
 
 async def get_translator():

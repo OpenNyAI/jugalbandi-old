@@ -13,6 +13,7 @@ google-cloud-speech = "^2.19.0"
 jb-core = {path = "../jb-core", develop = true}
 jb-audio-converter = {path = "../jb-audio-converter", develop = true}
 httpx = "^0.24.1"
+azure-cognitiveservices-speech = "^1.32.1"
 
 [tool.poetry.group.dev.dependencies]
 black = "^23.3.0"
