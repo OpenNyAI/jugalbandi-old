@@ -286,11 +286,14 @@ class AzureSpeechProcessor(SpeechProcessor):
 
     async def text_to_speech(self, text: str, input_language: Language) -> bytes:
         voice_language_code = self.language_dict[input_language.name][1]
-        audio_config = speechsdk.audio.AudioOutputConfig(use_default_speaker=True)
+        temp_output_file = tempfile.NamedTemporaryFile()
+        audio_config = speechsdk.audio.AudioOutputConfig(filename=temp_output_file.name)
         self.speech_config.speech_synthesis_voice_name = voice_language_code
         speech_synthesizer = speechsdk.SpeechSynthesizer(speech_config=self.speech_config,
                                                          audio_config=audio_config)
         speech_synthesis_result = speech_synthesizer.speak_text_async(text).get()
+        if temp_output_file:
+            temp_output_file.close()
 
         return speech_synthesis_result.audio_data
 
