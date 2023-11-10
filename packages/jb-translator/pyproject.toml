@@ -12,6 +12,7 @@ google-cloud-translate = "^3.11.1"
 httpx = "^0.24.1"
 jb-core = {path = "../jb-core", develop = true}
 python-dotenv = "^1.0.0"
+aiohttp = "^3.8.6"
 
 
 [tool.poetry.group.dev.dependencies]

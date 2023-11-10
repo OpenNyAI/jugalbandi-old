@@ -30,6 +30,7 @@ from jugalbandi.translator import (
     CompositeTranslator,
     GoogleTranslator,
     DhruvaTranslator,
+    AzureTranslator,
     Translator,
 )
 from jugalbandi.auth_token.token import decode_token
@@ -83,7 +84,9 @@ async def get_speech_processor():
 
 
 async def get_translator():
-    return CompositeTranslator(GoogleTranslator(), DhruvaTranslator())
+    return CompositeTranslator(GoogleTranslator(),
+                               AzureTranslator(),
+                               DhruvaTranslator())
 
 
 async def get_gpt_index_qa_engine(

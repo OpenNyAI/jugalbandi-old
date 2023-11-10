@@ -241,6 +241,7 @@ class GoogleSpeechProcessor(SpeechProcessor):
 
 class AzureSpeechProcessor(SpeechProcessor):
     def __init__(self):
+        # TODO: Handle OR & PA language codes as they are not supported by Azure
         self.language_dict = {
             "EN" : ["en-US", "en-US-JennyNeural"],
             "HI" : ["hi-IN", "hi-IN-SwaraNeural"],

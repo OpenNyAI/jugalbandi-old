@@ -7,6 +7,8 @@ from jugalbandi.core import (
     InternalServerException,
 )
 import json
+import uuid
+import aiohttp
 
 
 class Translator(ABC):
@@ -74,15 +76,13 @@ class DhruvaTranslator(Translator):
         return response.json()
 
     async def translate_text(
-        self, textQuery: str, source_language: Language, destination_language: Language
+        self, text: str, source_language: Language, destination_language: Language
     ) -> str:
         source = source_language.name.lower()
-        dest = destination_language.name.lower()
-        if source == dest:
-            return textQuery
+        destination = destination_language.name.lower()
 
         bhashini_translation_config = await self.perform_bhashini_config_call(
-            task='translation', source_language=source, target_language=dest)
+            task='translation', source_language=source, target_language=destination)
 
         payload = json.dumps({
             "pipelineTasks": [
@@ -102,7 +102,7 @@ class DhruvaTranslator(Translator):
             "inputData": {
                 "input": [
                     {
-                        "source": textQuery
+                        "source": text
                     }
                 ]
             }
@@ -126,6 +126,38 @@ class DhruvaTranslator(Translator):
 
         indicText = response.json()['pipelineResponse'][0]['output'][0]['target']
         return indicText
+
+
+class AzureTranslator(Translator):
+    def __init__(self):
+        self.subscription_key = os.getenv('AZURE_TRANSLATION_KEY')
+        self.resource_location = os.getenv('AZURE_TRANSLATION_RESOURCE_LOCATION')
+        self.endpoint = "https://api.cognitive.microsofttranslator.com"
+
+    async def translate_text(
+            self, text: str, source_language: Language, destination_language: Language
+    ) -> str:
+        path = '/translate'
+        constructed_url = self.endpoint + path
+
+        # TODO: Map chinese language code from ZH to zh-Hans
+        params = {
+            'api-version': '3.0',
+            'from': source_language.name.lower(),
+            'to': destination_language.name.lower()
+        }
+        headers = {
+            'Ocp-Apim-Subscription-Key': self.subscription_key,
+            'Ocp-Apim-Subscription-Region': self.resource_location,
+            'Content-type': 'application/json',
+            'X-ClientTraceId': str(uuid.uuid4())
+        }
+        body = [{'text': text}]
+
+        async with aiohttp.ClientSession(connector=aiohttp.TCPConnector(ssl=False)) as session:
+            async with session.post(constructed_url, params=params, headers=headers, json=body) as response:
+                response = await response.json()
+                return response[0]['translations'][0]['text']
 
 
 class GoogleTranslator(Translator):
@@ -162,6 +194,7 @@ class CompositeTranslator(Translator):
         excs = []
         for translator in self.translators:
             try:
+                print("INSIDE THIS translator", translator)
                 return await translator.translate_text(
                     text, source_language, destination_language
                 )

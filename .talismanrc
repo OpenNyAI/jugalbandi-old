@@ -136,7 +136,7 @@ fileignoreconfig:
 - filename: packages/jb-translator/README.md
   checksum: 0857d9b3457b60a1a0049b4d669fc53a0fb3886f54b6fcfaf9236ba6f292473e
 - filename: packages/jb-translator/jugalbandi/translator/translator.py
-  checksum: a97ff1964f513a6e3bdd6e57e814644b36bc1e141e00952bea74a86dc3b87cce
+  checksum: df966c1010ae88976afbc09f7e622c48fa4d7feef8f9cb030b2db8df563b29d6
 - filename: packages/jb-translator/poetry.lock
-  checksum: 60fa6ff20c1623a215d27c6f9865af88655a7e78ac40abdf2fd9f7dca9523909
+  checksum: cd4c7b8c4821d57ccfd8849367a42818d21ccfd92722afb9045a35e22ff1c2b6
 version: "1.0"
