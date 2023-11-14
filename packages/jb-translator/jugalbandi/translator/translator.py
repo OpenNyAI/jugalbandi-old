@@ -140,11 +140,20 @@ class AzureTranslator(Translator):
         path = '/translate'
         constructed_url = self.endpoint + path
 
-        # TODO: Map chinese language code from ZH to zh-Hans
+        if source_language.name == 'ZH':
+            source_language_code = 'zh-Hans'
+        else:
+            source_language_code = source_language.name.lower()
+
+        if destination_language.name == 'ZH':
+            destination_language_code = 'zh-Hans'
+        else:
+            destination_language_code = destination_language.name.lower()
+
         params = {
             'api-version': '3.0',
-            'from': source_language.name.lower(),
-            'to': destination_language.name.lower()
+            'from': source_language_code,
+            'to': destination_language_code
         }
         headers = {
             'Ocp-Apim-Subscription-Key': self.subscription_key,

@@ -4,9 +4,20 @@ from fastapi import FastAPI, UploadFile, Depends, Query, File
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security.api_key import APIKey
-from jugalbandi.core import Language, MediaFormat, IncorrectInputException
+from jugalbandi.core import (
+  Language,
+  MediaFormat,
+  IncorrectInputException,
+  SpeechProcessor as SpeechProcessorEnum
+)
 from jugalbandi.translator import Translator
-from jugalbandi.speech_processor import SpeechProcessor
+from jugalbandi.speech_processor import (
+  SpeechProcessor,
+  AzureSpeechProcessor,
+  GoogleSpeechProcessor,
+  DhruvaSpeechProcessor
+)
+from jugalbandi.audio_converter import convert_to_wav_with_ffmpeg
 from jugalbandi.tenant import TenantRepository
 from jugalbandi.document_collection import (
     DocumentRepository,
@@ -39,6 +50,7 @@ from .server_helper import (
     User,
 )
 from prometheus_fastapi_instrumentator import Instrumentator
+import base64
 # from .server_middleware import ApiKeyMiddleware
 
 init_env()
@@ -94,8 +106,12 @@ Instrumentator().instrument(app).expose(app)
 
 @app.exception_handler(Exception)
 async def custom_exception_handler(request, exception):
+    if hasattr(exception, 'status_code'):
+        status_code = exception.status_code
+    else:
+        status_code = 500
     return JSONResponse(
-        status_code=exception.status_code,
+        status_code=status_code,
         content={"error_message": str(exception)}
     )
 
@@ -385,6 +401,55 @@ async def get_source_document(
         translator, speech_processor, query_string, input_language, audio_file
     )
     return answer
+
+
+# Testing STT endpoint
+@app.get(
+    "/speech-to-text",
+    summary="Testing STT endpoint",
+    tags=["Language Processing"],
+)
+async def get_speech_to_text(
+    authorization: Annotated[User, Depends(verify_access_token)],
+    speech_query_url: str,
+    language: Language,
+    speech_processor_enum: SpeechProcessorEnum
+):
+    if speech_processor_enum.value == "Azure":
+        speech_processor = AzureSpeechProcessor()
+    elif speech_processor_enum.value == "Google":
+        speech_processor = GoogleSpeechProcessor()
+    else:
+        speech_processor = DhruvaSpeechProcessor()
+
+    wav_data = await convert_to_wav_with_ffmpeg(speech_query_url)
+    text = await speech_processor.speech_to_text(wav_data, language)
+    return {"text": text}
+
+
+# Testing TTS endpoint
+@app.get(
+    "/text-to-speech",
+    summary="Testing TTS endpoint",
+    tags=["Language Processing"],
+)
+async def get_text_to_speech(
+    authorization: Annotated[User, Depends(verify_access_token)],
+    text_query: str,
+    language: Language,
+    speech_processor_enum: SpeechProcessorEnum
+):
+    if speech_processor_enum.value == "Azure":
+        speech_processor = AzureSpeechProcessor()
+    elif speech_processor_enum.value == "Google":
+        speech_processor = GoogleSpeechProcessor()
+    else:
+        speech_processor = DhruvaSpeechProcessor()
+
+    print(text_query)
+    audio_bytes = await speech_processor.text_to_speech(text_query, language)
+    audio_base64 = base64.b64encode(audio_bytes).decode('utf-8')
+    return {"audio_bytes": audio_base64}
 
 
 app.mount("/auth", auth_app)

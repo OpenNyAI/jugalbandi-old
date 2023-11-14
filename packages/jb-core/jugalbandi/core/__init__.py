@@ -8,6 +8,7 @@ from .errors import (
     InternalServerException,
     ServiceUnavailableException,
 )
+from .speech_processor import SpeechProcessor
 from .singleton import SingletonMeta
 
 
@@ -21,5 +22,6 @@ __all__ = [
     "IncorrectInputException",
     "InternalServerException",
     "ServiceUnavailableException",
+    "SpeechProcessor",
     "SingletonMeta",
 ]

@@ -78,15 +78,15 @@ async def get_document_collection(
 
 
 async def get_speech_processor():
-    return CompositeSpeechProcessor(AzureSpeechProcessor(),
-                                    DhruvaSpeechProcessor(),
+    return CompositeSpeechProcessor(DhruvaSpeechProcessor(),
+                                    AzureSpeechProcessor(),
                                     GoogleSpeechProcessor())
 
 
 async def get_translator():
-    return CompositeTranslator(GoogleTranslator(),
-                               AzureTranslator(),
-                               DhruvaTranslator())
+    return CompositeTranslator(AzureTranslator(),
+                               DhruvaTranslator(),
+                               GoogleTranslator())
 
 
 async def get_gpt_index_qa_engine(

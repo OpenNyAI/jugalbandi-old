@@ -241,7 +241,6 @@ class GoogleSpeechProcessor(SpeechProcessor):
 
 class AzureSpeechProcessor(SpeechProcessor):
     def __init__(self):
-        # TODO: Handle OR & PA language codes as they are not supported by Azure
         self.language_dict = {
             "EN" : ["en-US", "en-US-JennyNeural"],
             "HI" : ["hi-IN", "hi-IN-SwaraNeural"],
@@ -304,6 +303,7 @@ class CompositeSpeechProcessor(SpeechProcessor):
         self.speech_processors = speech_processors
         self.european_language_codes = ["EN", "AF", "AR", "ZH", "FR", "DE", "ID",
                                         "IT", "JA", "KO", "PT", "RU", "ES", "TR"]
+        self.azure_not_supported_language_codes = ["OR", "PA"]
 
     async def speech_to_text(self, wav_data: bytes, input_language: Language) -> str:
         excs = []
@@ -311,6 +311,9 @@ class CompositeSpeechProcessor(SpeechProcessor):
             try:
                 if (input_language.name in self.european_language_codes and
                         isinstance(speech_processor, DhruvaSpeechProcessor)):
+                    pass
+                elif (input_language.name in self.azure_not_supported_language_codes and
+                      isinstance(speech_processor, AzureSpeechProcessor)):
                     pass
                 else:
                     return await speech_processor.speech_to_text(wav_data, input_language)
@@ -325,6 +328,9 @@ class CompositeSpeechProcessor(SpeechProcessor):
             try:
                 if (input_language.name in self.european_language_codes and
                         isinstance(speech_processor, DhruvaSpeechProcessor)):
+                    pass
+                elif (input_language.name in self.azure_not_supported_language_codes and
+                      isinstance(speech_processor, AzureSpeechProcessor)):
                     pass
                 else:
                     return await speech_processor.text_to_speech(text, input_language)
