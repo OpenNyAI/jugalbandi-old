@@ -44,7 +44,7 @@ fileignoreconfig:
 - filename: jb-jiva-service/jiva/helper.py
   checksum: 8daa6610c9785b4673793ce242daf9391f3e6794a9ef1c187de5c30c16499c17
 - filename: jb-jiva-service/jiva/sections_splitting_chunking.py
-  checksum: 7e25bd5c43809a7f94b15d767fdb5966fbf2fbb6070981dcda8a095dfe914807
+  checksum: 4794a4b0b7bc9a2626bddb039d294eed21079dafe460f1e7459c9d5718565ba5
 - filename: jb-jiva-service/poetry.lock
   checksum: fe4109ec1af71df45c3a30efbb915f4fba040a7ee6664da6a520855ce93e1c79
 - filename: jb-jiva-service/tests/abcd.pdf

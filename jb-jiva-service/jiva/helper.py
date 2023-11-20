@@ -185,12 +185,20 @@ async def send_email(
 
 async def classify_query(query: str) -> str:
     system_rules = (
-        "You are a classifier assistant who helps with classifying the given query."
-        "The queries can be classified into the following categories: "
-        "Descriptive Search, Non Descriptive Search."
-        "If the given query is a interrogative sentence, it is a Descriptive Search."
-        "Else it is a Non Descriptive Search."
-        "Return the category as result."
+        """
+        Given the following query, classify it as either descriptive or non-descriptive:
+
+        Query: "Give me section 6 of the IPC act"
+        Label: "Non Descriptive Search"
+
+        Query: "Civil services act"
+        Label: "Non Descriptive Search"
+
+        Query: "What is the definition of pests?"
+        Label: "Descriptive Search"
+
+        Return the label for the query.
+        """
     )
     res = openai.ChatCompletion.create(
         model="gpt-3.5-turbo",
