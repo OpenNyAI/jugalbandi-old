@@ -50,8 +50,12 @@ user_app.add_middleware(
 
 @user_app.exception_handler(Exception)
 async def custom_exception_handler(request, exception):
+    if hasattr(exception, 'status_code'):
+        status_code = exception.status_code
+    else:
+        status_code = 500
     return JSONResponse(
-        status_code=exception.status_code,
+        status_code=status_code,
         content={"error_message": str(exception)}
     )
 
@@ -91,7 +95,11 @@ async def query(
             ]
             return QueryResult(items=document_response)  # type: ignore
     else:
-        response = await jiva_library.general_search(query, authorization.email_id)
+        if authorization is not None:
+            email_id = authorization.email_id
+        else:
+            email_id = ""
+        response = await jiva_library.general_search(query, email_id)
         general_response = [
             GeneralResponseItem(result=response)
         ]

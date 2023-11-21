@@ -186,18 +186,9 @@ async def send_email(
 async def classify_query(query: str) -> str:
     system_rules = (
         """
-        Given the following query, classify it as either descriptive or non-descriptive:
-
-        Query: "Give me section 6 of the IPC act"
-        Label: "Non Descriptive Search"
-
-        Query: "Civil services act"
-        Label: "Non Descriptive Search"
-
-        Query: "What is the definition of pests?"
-        Label: "Descriptive Search"
-
-        Return the label for the query.
+        Given a query, classify it as either a descriptive search (questions) or a non-descriptive search (commands).
+        The Descriptive searches typically are questions whereas the non descriptive searches are often commands or statements.
+        Return only either Descriptive Search or Non Descriptive Search for the given query as the output.
         """
     )
     res = openai.ChatCompletion.create(

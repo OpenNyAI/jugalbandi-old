@@ -207,21 +207,22 @@ class LegalLibrary(Library):
 
         encoding = tiktoken.get_encoding('cl100k_base')
         num_tokens = len(encoding.encode(augmented_query))
-        if num_tokens > 3500:
-            augmented_query = (
-                "Information to search for answers:\n\n"
-                "\n\n-----\n\n".join(contexts[i] for i in range(len(contexts)-1)) +
-                "\n\n-----\n\nQuery: " + query
-            )
+        print(num_tokens)
+        # if num_tokens > 3500:
+        #     augmented_query = (
+        #         "Information to search for answers:\n\n"
+        #         "\n\n-----\n\n".join(contexts[i] for i in range(len(contexts)-1)) +
+        #         "\n\n-----\n\nQuery: " + query
+        #     )
         messages.append({"role": "user", "content": augmented_query})
         res = openai.ChatCompletion.create(
-            model="gpt-3.5-turbo",
+            model="gpt-3.5-turbo-16k",
             messages=messages,
         )
         response = res["choices"][0]["message"]["content"]
-        await self.jiva_repository.insert_conversation_logs(email_id=email_id,
-                                                            query=query,
-                                                            response=response)
+        # await self.jiva_repository.insert_conversation_logs(email_id=email_id,
+        #                                                     query=query,
+        #                                                     response=response)
         return response
 
     async def search_titles(self, query: str) -> List[DocumentMetaData]:
@@ -301,7 +302,7 @@ class LegalLibrary(Library):
         processed_query = processed_query.strip()
         await self.download_index_files("index.faiss", "index.pkl")
         vector_db = FAISS.load_local("indexes", OpenAIEmbeddings())
-        docs = vector_db.similarity_search(query=query, k=5)
+        docs = vector_db.similarity_search(query=query, k=10)
         return await self._generate_response(docs=docs, query=processed_query,
                                              email_id=email_id,
-                                             past_conversations_history=True)
+                                             past_conversations_history=False)
