@@ -5,10 +5,16 @@ from jugalbandi.core.caching import aiocached
 from jugalbandi.auth_token.token import decode_token, decode_refresh_token
 from jugalbandi.legal_library import LegalLibrary
 from jugalbandi.storage import GoogleStorage
-from .db import JivaRepository
+from jugalbandi.translator import (
+    CompositeTranslator,
+    GoogleTranslator,
+    DhruvaTranslator,
+)
+from jugalbandi.jiva_repository import JivaRepository
 from .model import User
 from typing import Annotated
 import os
+import openai
 from sendgrid import SendGridAPIClient
 from sendgrid.helpers.mail import Mail, Email, To, Content
 
@@ -31,6 +37,10 @@ async def get_library() -> LegalLibrary:
     library_path = os.environ["JIVA_LIBRARY_PATH"]
     google_storage = GoogleStorage(bucket_name, library_path)
     return LegalLibrary(id="jiva", store=google_storage)
+
+
+async def get_translator():
+    return CompositeTranslator(GoogleTranslator(), DhruvaTranslator())
 
 
 async def verify_access_token(
@@ -171,3 +181,21 @@ async def send_email(
     response = sg.client.mail.send.post(request_body=mail_json)
     print(response.status_code)
     print(response.headers)
+
+
+async def classify_query(query: str) -> str:
+    system_rules = (
+        """
+        Given a query, classify it as either a descriptive search (questions) or a non-descriptive search (commands).
+        The Descriptive searches typically are questions whereas the non descriptive searches are often commands or statements.
+        Return only either Descriptive Search or Non Descriptive Search for the given query as the output.
+        """
+    )
+    res = openai.ChatCompletion.create(
+        model="gpt-3.5-turbo",
+        messages=[
+            {"role": "system", "content": system_rules},
+            {"role": "user", "content": query},
+        ],
+    )
+    return res["choices"][0]["message"]["content"]

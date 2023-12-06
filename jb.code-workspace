@@ -65,6 +65,10 @@
       "path": "packages/jb-tenant"
     },
     {
+      "name": "Package jb-jiva-repository",
+      "path": "packages/jb-jiva-repository"
+    },
+    {
       "name": "Documentation",
       "path": "docs"
     }

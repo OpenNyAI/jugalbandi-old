@@ -5,7 +5,7 @@ from fastapi.responses import JSONResponse
 from auth_service.password import get_hashed_password, verify_password
 from jugalbandi.auth_token import create_access_token, create_refresh_token
 from .helper import get_jiva_repo, send_email, verify_refresh_token
-from .db import JivaRepository
+from jugalbandi.jiva_repository import JivaRepository
 from .model import (
     SignupRequest,
     UpdatePasswordRequest,

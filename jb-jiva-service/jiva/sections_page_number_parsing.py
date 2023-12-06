@@ -8,27 +8,31 @@ from fuzzywuzzy import fuzz
 
 # Base directory with all karnataka acts
 directory = "Full English Docs"
+page_number_pattern = r"^[\n\s]*\d+[\n\s]*(?!.)"
 
 
-def get_karnataka_act_sections(file_path):
-    end_string = "and reason"
-    pattern = re.compile(re.escape(end_string), re.IGNORECASE)
+def get_karnataka_act_section_names(file_path):
+    pattern = r"statement(?:s)?\s*of\s*object(?:s)?\s*and\s*reason(?:s)?"
     doc = fitz.open(file_path)
     content = "\n"
     for i in range(len(doc)):
         flag = False
         page = doc[i]
         text = page.get_text("text", textpage=None, sort=False)
-        # text = re.sub(r'\n\d+\s*\n', '\n', text)
+        text = re.sub(page_number_pattern, '', text)
         if i == 0:
-            occurences = text.lower().count(end_string)
-            if occurences == 2:
-                text = pattern.split(text)[1]
+            matches = list(re.finditer(pattern, text, re.IGNORECASE))
+            if len(matches) == 2:
+                split_text = re.split(pattern, text, flags=re.IGNORECASE)
+                del split_text[-1]
+                text = " ".join(split_text)
                 flag = True
-        else:
-            if end_string in text.lower():
-                text = pattern.split(text)[0]
-                text = pattern.sub(text, "")
+
+        if flag is False:
+            split_text = re.split(pattern, text, flags=re.IGNORECASE)
+            if len(split_text) == 2:
+                del split_text[-1]
+                text = " ".join(split_text)
                 flag = True
 
         content += text
@@ -48,7 +52,7 @@ def writing_karnataka_act_sections():
         file = dir_files[i]
         print(file)
         file_path = os.path.join(directory, file)
-        sections = get_karnataka_act_sections(file_path)
+        sections = get_karnataka_act_section_names(file_path)
         sections = sections.replace("*", "")
         sections = sections.replace("SCHEDULE", "")
         sections = sections.replace("STATEMENT OF OBJECTS", "")
@@ -57,19 +61,19 @@ def writing_karnataka_act_sections():
         count += 1
 
 
-# TODO: Remove page numbers and make it generic
-def get_central_act_sections(file_path):
-    match_string = r"ARR\D{1,2}EMENT OF SECT\D{0,2}NS"
+def get_central_act_section_names(file_path):
+    match_string = r"ARR\D{1,3}EMENT OF SECT\D{0,2}NS{0,1}"
     doc = fitz.open(file_path)
     first_page = doc[0].get_text("text", textpage=None, sort=False)
-    if re.match(match_string, first_page):
-        title, sections = first_page.split(match_string)
+    if re.search(match_string, first_page):
+        title, sections = re.split(match_string, first_page)
         title = re.sub(r'(?:^|\s|\n)\d{1,2}(?=\s|\n|$)', '', title)
         title = title.replace("_", "").strip()
         sections = sections.replace("SECTIONS", "").replace("_", "").strip()
         for i in range(1, len(doc)):
             page = doc[i]
             text = page.get_text("text", textpage=None, sort=False)
+            text = re.sub(page_number_pattern, '', text)
             if title in text:
                 break
             sections += text
@@ -96,7 +100,7 @@ def writing_central_act_sections():
         file = dir_files[i]
         print(count, file)
         file_path = os.path.join(central_directory, file)
-        title, sections = get_central_act_sections(file_path)
+        title, sections = get_central_act_section_names(file_path)
         sections = sections.replace("THE SCHEDULE.", "")
         data = {"Filename": file, "Actname": title, "Section": sections}
         writer.writerow(data)
@@ -184,7 +188,7 @@ def writing_csv_files_to_excel():
     writer = pd.ExcelWriter('karnataka_output.xlsx', engine='xlsxwriter')
 
     # Loop through each CSV file and copy data to a new worksheet
-    for index, csv_file in enumerate(csv_files):
+    for _, csv_file in enumerate(csv_files):
         # Read the CSV file using pandas
         print(csv_file)
         full_path = os.path.join(directory, csv_file)

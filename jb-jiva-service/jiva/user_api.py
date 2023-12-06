@@ -5,24 +5,33 @@ import json
 from typing import Annotated, Optional
 from fastapi import Depends, FastAPI, Response
 from fastapi.responses import JSONResponse
-from jiva.db import JivaRepository
+from jugalbandi.jiva_repository import JivaRepository
 from .model import (
     DocumentInfo,
     DocumentsList,
     QueryResult,
     DocumentResponseItem,
     SectionResponseItem,
+    GeneralResponseItem,
     ConversationHistory,
     OpenedDocuments,
     FeedbackUpdateRequest,
     Bookmark,
     BookmarkUpdate,
 )
-from .helper import get_jiva_repo, verify_access_token, get_library
+from .helper import (
+  get_jiva_repo,
+  verify_access_token,
+  get_library,
+  get_translator,
+  classify_query
+)
 from .model import User
 from fastapi.middleware.cors import CORSMiddleware
 from jugalbandi.library import DocumentMetaData
 from jugalbandi.legal_library.legal_library import LegalLibrary, ActMetaData
+from jugalbandi.translator import Translator
+from jugalbandi.core.language import Language
 from PIL import Image
 from typing import Dict, List
 from datetime import datetime
@@ -41,8 +50,12 @@ user_app.add_middleware(
 
 @user_app.exception_handler(Exception)
 async def custom_exception_handler(request, exception):
+    if hasattr(exception, 'status_code'):
+        status_code = exception.status_code
+    else:
+        status_code = 500
     return JSONResponse(
-        status_code=exception.status_code,
+        status_code=status_code,
         content={"error_message": str(exception)}
     )
 
@@ -56,22 +69,41 @@ async def custom_exception_handler(request, exception):
 async def query(
     authorization: Annotated[User, Depends(verify_access_token)],
     jiva_library: Annotated[LegalLibrary, Depends(get_library)],
+    translator: Annotated[Translator, Depends(get_translator)],
     query: str,
+    # language: Language,
 ):
+    # TODO: Quick fix for deployment
+    language = Language.EN
+    if language != Language.EN:
+        query = await translator.translate_text(query, language, Language.EN)
     pattern = re.compile(r"\b[Ss]ec(?:tion)?", re.IGNORECASE)
-    matches = re.search(pattern, query)
-    if matches:
-        responses = await jiva_library.search_sections(query)
-        section_response = [
-            SectionResponseItem(section=response) for response in responses
-        ]
-        return QueryResult(items=section_response)  # type: ignore
+    query_type = await classify_query(query)
+    print(query_type)
+    if "Non Descriptive Search" in query_type:
+        matches = re.search(pattern, query)
+        if matches:
+            responses = await jiva_library.search_sections(query)
+            section_response = [
+                SectionResponseItem(section=response) for response in responses
+            ]
+            return QueryResult(items=section_response)  # type: ignore
+        else:
+            responses = await jiva_library.search_titles(query)
+            document_response = [
+                DocumentResponseItem(metadata=response) for response in responses
+            ]
+            return QueryResult(items=document_response)  # type: ignore
     else:
-        responses = await jiva_library.search_titles(query)
-        document_response = [
-            DocumentResponseItem(metadata=response) for response in responses
+        if authorization is not None:
+            email_id = authorization.email_id
+        else:
+            email_id = ""
+        response = await jiva_library.general_search(query, email_id)
+        general_response = [
+            GeneralResponseItem(result=response)
         ]
-        return QueryResult(items=document_response)  # type: ignore
+        return QueryResult(items=general_response)  # type: ignore
 
 
 @user_app.get(
@@ -116,9 +148,15 @@ async def get_document(
 async def get_documents(
     authorization: Annotated[User, Depends(verify_access_token)],
     jiva_library: Annotated[LegalLibrary, Depends(get_library)],
+    # language: Language,
 ):
+    # TODO: Quick fix for deployment
+    language = Language.EN
     catalog = await jiva_library.catalog()
-    documents = [DocumentInfo(id=cat, title=catalog[cat].title) for cat in catalog]
+    if language in [language.KN, language.HI]:
+        documents = [DocumentInfo(id=cat, title=catalog[cat].translated_data['title'][language.value]) for cat in catalog]
+    else:
+        documents = [DocumentInfo(id=cat, title=catalog[cat].title) for cat in catalog]
     return DocumentsList(documents=documents)
 
 

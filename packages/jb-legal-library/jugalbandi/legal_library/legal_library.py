@@ -11,12 +11,17 @@ from jugalbandi.core.errors import (
     IncorrectInputException,
     InternalServerException,
 )
+from jugalbandi.jiva_repository import JivaRepository
 from sklearn.feature_extraction.text import TfidfVectorizer
+from langchain.vectorstores.faiss import FAISS
+from langchain.embeddings.openai import OpenAIEmbeddings
 import re
 import os
 import openai
 import json
+import roman
 import numpy as np
+import tiktoken
 
 
 class InvalidActMetaData(Exception):
@@ -108,6 +113,7 @@ class LegalLibrary(Library):
     def __init__(self, id: str, store: Storage):
         super(LegalLibrary, self).__init__(id, store)
         self._act_cache: TTLCache = TTLCache(2, 900)
+        self.jiva_repository = JivaRepository()
 
     @aiocachedmethod(operator.attrgetter("_act_cache"))
     async def act_catalog(self) -> Dict[str, ActMetaData]:
@@ -146,12 +152,23 @@ class LegalLibrary(Library):
 
     async def _preprocess_query(self, query: str) -> str:
         query = await self._abbreviate_query(query)
-        words = ["Give me", "Give", "Find me", "Find", "Get me", "Get"]
+        words = ["Give me", "Give", "Find me", "Find", "Get me", "Get",
+                 "Tell me", "Tell"]
         for word in words:
             pattern = re.compile(re.escape(word), re.IGNORECASE)
             query = pattern.sub("", query)
 
         return query.strip()
+
+    async def _preprocess_section_number(self, section_number: str) -> str:
+        try:
+            result = int(section_number)
+        except ValueError:
+            try:
+                result = roman.fromRoman(section_number)
+            except Exception:
+                raise IncorrectInputException("Incorrect section number format")
+        return str(result)
 
     async def _get_document_section(self, section_number: str,
                                     document_id: str, document_metadata:
@@ -166,8 +183,51 @@ class LegalLibrary(Library):
                                        start_page=section["Start page"],
                                        metadata=document_metadata)
 
+    async def _generate_response(self, docs: list, query: str,
+                                 email_id: str, past_conversations_history: bool):
+        contexts = [document.page_content for document in docs]
+        augmented_query = (
+            "Information to search for answers:\n\n"
+            "\n\n-----\n\n".join(context for context in contexts) +
+            "\n\n-----\n\nQuery: " + query
+        )
+        system_rules = (
+            "You are a helpful assistant who helps with answering questions "
+            "based on the provided information. If the information cannot be found "
+            "in the text provided, you admit that I don't know"
+        )
+        messages = [{"role": "system", "content": system_rules}]
+
+        if past_conversations_history:
+            past_conversations = await self.jiva_repository.get_conversation_logs(
+                email_id=email_id)
+            for convo in past_conversations:
+                messages.append({"role": "user", "content": convo['query']})
+                messages.append({"role": "assistant", "content": convo['response']})
+
+        encoding = tiktoken.get_encoding('cl100k_base')
+        num_tokens = len(encoding.encode(augmented_query))
+        print(num_tokens)
+        # if num_tokens > 3500:
+        #     augmented_query = (
+        #         "Information to search for answers:\n\n"
+        #         "\n\n-----\n\n".join(contexts[i] for i in range(len(contexts)-1)) +
+        #         "\n\n-----\n\nQuery: " + query
+        #     )
+        messages.append({"role": "user", "content": augmented_query})
+        res = openai.ChatCompletion.create(
+            model="gpt-3.5-turbo-16k",
+            messages=messages,
+        )
+        response = res["choices"][0]["message"]["content"]
+        # await self.jiva_repository.insert_conversation_logs(email_id=email_id,
+        #                                                     query=query,
+        #                                                     response=response)
+        return response
+
     async def search_titles(self, query: str) -> List[DocumentMetaData]:
         processed_query = await self._preprocess_query(query)
+        processed_query = processed_query.strip()
         catalog = await self.catalog()
         titles_list = [catalog[cat].title for cat in catalog]
 
@@ -189,7 +249,8 @@ class LegalLibrary(Library):
     async def search_sections(self, query: str):
         processed_query = await self._preprocess_query(query)
         processed_query = processed_query.strip()
-        pattern = re.compile(r'\b[Ss]ec(?:tion)? (\d+[A-Z]{0,3})', re.IGNORECASE)
+        pattern = re.compile(r'\b[Ss]ec(?:tion)? (\d+|[IVXLCDM]+[A-Z]{0,3})',
+                             re.IGNORECASE)
         matches = re.search(pattern, processed_query)
         if matches:
             section_number = matches.group(1)
@@ -198,6 +259,7 @@ class LegalLibrary(Library):
                                        split_string))
             title = split_string[0].strip()
             title = re.sub(r'(?i)of', "", title)
+            section_number = await self._preprocess_section_number(section_number)
             documents_metadata = await self.search_titles(title)
             document_metadata = documents_metadata[0]
             document_id = document_metadata.id
@@ -234,3 +296,13 @@ class LegalLibrary(Library):
             return document_sections
         else:
             raise IncorrectInputException("Incorrect input query format")
+
+    async def general_search(self, query: str, email_id: str):
+        processed_query = await self._preprocess_query(query)
+        processed_query = processed_query.strip()
+        await self.download_index_files("index.faiss", "index.pkl")
+        vector_db = FAISS.load_local("indexes", OpenAIEmbeddings())
+        docs = vector_db.similarity_search(query=query, k=10)
+        return await self._generate_response(docs=docs, query=processed_query,
+                                             email_id=email_id,
+                                             past_conversations_history=False)
