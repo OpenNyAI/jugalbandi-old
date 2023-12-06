@@ -16,7 +16,7 @@ fileignoreconfig:
 - filename: jb-auth-service/tests/test_password.py
   checksum: caad092dced530d43f78abb5ca55eed085ba8d3c0fc1b1eaa98975921d9872a5
 - filename: jb-generic-qa/README.md
-  checksum: 5dc17c1798239662e1cf4d94af540368226a3c16f8d5548f19fe4d0a68d68ee9
+  checksum: d996007523688cbc706b762ec8c65c095417611d04d4ecc01cb55b70d3ea7f7b
 - filename: jb-generic-qa/Titles.csv
   checksum: 156dd50776c1488e4f1d723002ca7de4c799b119f2aac87996036970c4fbb424
 - filename: jb-generic-qa/generic_qa/server.py
@@ -118,7 +118,7 @@ fileignoreconfig:
 - filename: packages/jb-qa/tests/test_qa_engine.py
   checksum: 9ba58dc1ad8b8043c559c6c8889cb23affd488bbcb8b32dad9011cad7f4c6f89
 - filename: packages/jb-speech-processor/README.md
-  checksum: f6238515507d8c111662ae500a4ffa782388b6447862a9a053d2ff96f6eeae7c
+  checksum: 763542e3d402856a21b104015c366f77801528a7945c35b72a1f4ab5e5712758
 - filename: packages/jb-speech-processor/jugalbandi/speech_processor/speech_processor.py
   checksum: 8b8918d0befa9447866c52d02b4859d0b7f3dc2df59d7ae24ef1ac5da70f4132
 - filename: packages/jb-speech-processor/poetry.lock
@@ -138,7 +138,7 @@ fileignoreconfig:
 - filename: packages/jb-tenant/poetry.lock
   checksum: 22da4d7878fde943dbb41fdae45fcfeceea8346e30cbf4a4cfe4fe61fc836708
 - filename: packages/jb-translator/README.md
-  checksum: 0857d9b3457b60a1a0049b4d669fc53a0fb3886f54b6fcfaf9236ba6f292473e
+  checksum: 2055892a8379b83059675d0c31e80a10f74113c0c5a85edc89f590ffa086d0e0
 - filename: packages/jb-translator/jugalbandi/translator/translator.py
   checksum: df966c1010ae88976afbc09f7e622c48fa4d7feef8f9cb030b2db8df563b29d6
 - filename: packages/jb-translator/poetry.lock

@@ -4,7 +4,8 @@ This is a package that takes care of translation of text. It has the following s
 
 - Bhashini (Dhruva APIs)
 - Google
-- Composite (Combination of Bhashini and Google for better availability)
+- Azure
+- Composite (Combination of Bhashini, Google and Azure for better availability)
 
 <br>
 
@@ -40,4 +41,6 @@ GOOGLE_APPLICATION_CREDENTIALS=<path_to_gcp_credentials.json>
 BHASHINI_USER_ID=<your_bhashini_user_id>
 BHASHINI_API_KEY=<your_bhashini_api_key>
 BHASHINI_PIPELINE_ID=<your_bhashini_pipeline_id>
+AZURE_TRANSLATION_KEY=<your_azure_translation_key>
+AZURE_TRANSLATION_RESOURCE_LOCATION=<your_azure_translation_resource_location>
 ```

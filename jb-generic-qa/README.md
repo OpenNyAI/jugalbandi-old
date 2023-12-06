@@ -77,10 +77,16 @@ To use the code, you need to follow these steps:
    TENANT_DATABASE_NAME=<your_tenant_db_name>
    ALLOW_INVALID_API_KEY=true
 
-   # Speech processor and translator env variables
+   # Bhashini Speech processor and Translator env variables
    BHASHINI_USER_ID=<your_bhashini_user_id>
    BHASHINI_API_KEY=<your_bhashini_api_key>
    BHASHINI_PIPELINE_ID=<your_bhashini_pipeline_id>
+
+   # Azure Speech processor and Translator env variables
+   AZURE_SPEECH_KEY=<your_azure_speech_key>
+   AZURE_SPEECH_REGION=<your_azure_speech_region>
+   AZURE_TRANSLATION_KEY=<your_azure_translation_key>
+   AZURE_TRANSLATION_RESOURCE_LOCATION=<your_azure_translation_resource_location>
    ```
 
 7. This service uses Auth service as well as other packages such as auth-token, tenant, speech processor, translator. Hence their respective environment variables are also required. Please refer to their respective repositories for more information.
