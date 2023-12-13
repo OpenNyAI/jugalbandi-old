@@ -107,6 +107,19 @@ async def query(
 
 
 @user_app.get(
+    "/query-testing",
+    operation_id="query_testing",
+    tags=["Query"],
+)
+async def query_testing(
+    jiva_library: Annotated[LegalLibrary, Depends(get_library)],
+    query: str,
+):
+    response = await jiva_library.test_response(query)
+    return {"query": query, "response": response}
+
+
+@user_app.get(
     "/document/{document_id}",
 )
 async def get_document(

@@ -15,6 +15,7 @@ from jugalbandi.jiva_repository import JivaRepository
 from sklearn.feature_extraction.text import TfidfVectorizer
 from langchain.vectorstores.faiss import FAISS
 from langchain.embeddings.openai import OpenAIEmbeddings
+from langchain.docstore.document import Document
 import re
 import os
 import openai
@@ -183,7 +184,7 @@ class LegalLibrary(Library):
                                        start_page=section["Start page"],
                                        metadata=document_metadata)
 
-    async def _generate_response(self, docs: list, query: str,
+    async def _generate_response(self, docs: List[Document], query: str,
                                  email_id: str, past_conversations_history: bool):
         contexts = [document.page_content for document in docs]
         augmented_query = (
@@ -193,8 +194,10 @@ class LegalLibrary(Library):
         )
         system_rules = (
             "You are a helpful assistant who helps with answering questions "
-            "based on the provided information. If the information cannot be found "
-            "in the text provided, you admit that I don't know"
+            "based on the provided text. Extract and return the answer from the "
+            "provided text and do not paraphrase the answer. "
+            "If the answer cannot be found in the provided text, "
+            "you admit that you do not know."
         )
         messages = [{"role": "system", "content": system_rules}]
 
@@ -216,7 +219,7 @@ class LegalLibrary(Library):
         #     )
         messages.append({"role": "user", "content": augmented_query})
         res = openai.ChatCompletion.create(
-            model="gpt-3.5-turbo-16k",
+            model="gpt-4-1106-preview",
             messages=messages,
         )
         response = res["choices"][0]["message"]["content"]
@@ -296,6 +299,55 @@ class LegalLibrary(Library):
             return document_sections
         else:
             raise IncorrectInputException("Incorrect input query format")
+
+    async def test_response(self, query: str):
+        processed_query = await self._preprocess_query(query)
+        processed_query = processed_query.strip()
+        await self.download_index_files("index.faiss", "index.pkl")
+        vector_db = FAISS.load_local("indexes", OpenAIEmbeddings())
+        docs = vector_db.similarity_search(query=query, k=10)
+
+        contexts = []
+        unique_chunks = []
+        for document in docs:
+            file_name = document.metadata['file_name']
+            contexts.append(document.page_content)
+            if file_name not in unique_chunks:
+                unique_chunks.append(file_name)
+
+        if len(unique_chunks) >= 5:
+            response = (
+                "Please provide act name along with the query to search "
+                "for answers"
+            )
+        else:
+            augmented_query = (
+                "Information to search for answers:\n\n"
+                "\n\n-----\n\n".join(context for context in contexts) +
+                "\n\n-----\n\nQuery: " + query
+            )
+            system_rules = (
+                "You are a helpful assistant who helps with answering questions "
+                "based on the provided text. Extract and return the answer from the "
+                "provided text and do not paraphrase the answer. "
+                "If the answer cannot be found in the provided text, "
+                "you admit that you do not know."
+            )
+            messages = [{"role": "system", "content": system_rules}]
+
+            encoding = tiktoken.get_encoding('cl100k_base')
+            num_tokens = len(encoding.encode(augmented_query))
+            print(num_tokens)
+            messages.append({"role": "user", "content": augmented_query})
+            res = openai.ChatCompletion.create(
+                model="gpt-4-1106-preview",
+                messages=messages,
+            )
+            response = res["choices"][0]["message"]["content"]
+
+        await self.jiva_repository.insert_retriever_testing_logs(query=query,
+                                                                 response=response)
+        return response
 
     async def general_search(self, query: str, email_id: str):
         processed_query = await self._preprocess_query(query)

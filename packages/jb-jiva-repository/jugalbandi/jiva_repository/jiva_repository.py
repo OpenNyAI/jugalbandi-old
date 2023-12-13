@@ -94,7 +94,13 @@ class JivaRepository:
                     response TEXT,
                     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
                     FOREIGN KEY (email_id) REFERENCES users (email_id)
-                )
+                );
+                CREATE TABLE IF NOT EXISTS retriever_testing_logs (
+                    id SERIAL PRIMARY KEY,
+                    query TEXT,
+                    response TEXT,
+                    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+                );
             """
             )
 
@@ -455,6 +461,21 @@ class JivaRepository:
                 VALUES ($1, $2, $3);
                 """,
                 email_id,
+                query,
+                response
+            )
+
+    async def insert_retriever_testing_logs(self,
+                                            query: str,
+                                            response: str):
+        engine = await self._get_engine()
+        async with engine.acquire() as connection:
+            return await connection.execute(
+                """
+                INSERT INTO retriever_testing_logs
+                (query, response)
+                VALUES ($1, $2)
+                """,
                 query,
                 response
             )
