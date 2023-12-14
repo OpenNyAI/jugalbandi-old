@@ -22,8 +22,11 @@ import csv
 from oauth2client.service_account import ServiceAccountCredentials
 from datetime import datetime
 from dotenv import load_dotenv
+from jugalbandi.translator import GoogleTranslator
+from jugalbandi.core.language import Language
 
 
+# Function to get metadata from google sheets and convert it to csv file
 def convert_google_sheets_meta_data_to_csv(required_sheet_name: str):
     credentials_path = os.environ["GOOGLE_APPLICATION_CREDENTIALS"]
     scope = ['https://spreadsheets.google.com/feeds', 'https://www.googleapis.com/auth/drive']
@@ -50,6 +53,7 @@ def convert_google_sheets_meta_data_to_csv(required_sheet_name: str):
                     writer.writerow(row)
 
 
+# Function to process raw metadata and set it in DocumentMetaData object for each document
 async def set_meta_data(raw_meta_data: dict) -> DocumentMetaData:
     def capitalize_words(match):
         return match.group(0).capitalize()
@@ -103,6 +107,7 @@ async def set_meta_data(raw_meta_data: dict) -> DocumentMetaData:
     return document_meta_data
 
 
+# Function to upload bare pdf act document to cloud storage and return Document object
 async def upload_file(jiva_library: Library, document_file_path: str, document_meta_data: DocumentMetaData):
     file = open(document_file_path, "rb")
     file_bytes_content = file.read()
@@ -112,6 +117,7 @@ async def upload_file(jiva_library: Library, document_file_path: str, document_m
     return document
 
 
+# Function to upload thumbnail image (1st page of act) to cloud storage
 async def upload_thumbnail(document: Document):
     document_meta_data = await document.read_metadata()
     response = httpx.get(document_meta_data.public_url)
@@ -135,6 +141,7 @@ async def upload_thumbnail(document: Document):
                                file_type=LibraryFileType.SUPPORTING)
 
 
+# Function to upload sections json file to cloud storage for each document
 async def upload_section(document: Document):
     document_meta_data = await document.read_metadata()
     original_file_name = document_meta_data.original_file_name
@@ -161,7 +168,8 @@ async def upload_section(document: Document):
     await document.write_sections(section_bytes_data)
 
 
-async def upload_document(jiva_library: Library, csv_file_name: str):
+# Function to upload all documents along with their sections & metadata in given csv file to cloud storage
+async def act_uploading_process(jiva_library: Library, csv_file_name: str):
     raw_meta_data = []
     with open(csv_file_name, "r") as csv_input:
         reader = csv.DictReader(csv_input)
@@ -189,9 +197,54 @@ async def upload_document(jiva_library: Library, csv_file_name: str):
         counter += 1
 
 
-async def update_metadata(jiva_library: Library, csv_file_name: str):
+# Function to translate certain metadata fields to Kannada & Hindi
+async def translate_meta_data(jiva_library: Library, translator: GoogleTranslator):
     catalog = await jiva_library.catalog()
-    with open(csv_file_name, "r") as csv_input:
+    with open("tools/docs_meta_data.csv", "r") as csv_input:
+        reader = csv.DictReader(csv_input)
+        counter = 1
+        for row in reader:
+            cat = row["Document ID"]
+            print("\nFile Count:", counter)
+            print("Document ID:", cat)
+            meta_data = catalog[cat]
+            title = meta_data.title
+            legal_act_title = meta_data.extra_data["legal_act_title"]
+            legal_ministry = meta_data.extra_data["legal_ministry"]
+            kn_translated_title = await translator.translate_text(title, Language.EN, Language.KN)
+            hi_translated_title = await translator.translate_text(title, Language.EN, Language.HI)
+            kn_translated_legal_act_title = await translator.translate_text(legal_act_title, Language.EN, Language.KN)
+            hi_translated_legal_act_title = await translator.translate_text(legal_act_title, Language.EN, Language.HI)
+            if legal_ministry != "":
+                kn_translated_legal_ministry = await translator.translate_text(legal_ministry, Language.EN, Language.KN)
+                hi_translated_legal_ministry = await translator.translate_text(legal_ministry, Language.EN, Language.HI)
+            else:
+                kn_translated_legal_ministry = ""
+                hi_translated_legal_ministry = ""
+            with open("tools/translated_new_meta_data.csv", "a", newline="") as csv_output:
+                writer = csv.DictWriter(csv_output, fieldnames=["Document ID", "Title", "Legal Act Title",
+                                                                "Legal Ministry", "Title in Kannada", "Legal Act Title in Kannada",
+                                                                "Legal Ministry in Kannada", "Title in Hindi", "Legal Act Title in Hindi",
+                                                                "Legal Ministry in Hindi"])
+                writer.writerow({
+                    "Document ID": cat,
+                    "Title": title,
+                    "Legal Act Title": legal_act_title,
+                    "Legal Ministry": legal_ministry,
+                    "Title in Kannada": kn_translated_title,
+                    "Legal Act Title in Kannada": kn_translated_legal_act_title,
+                    "Legal Ministry in Kannada": kn_translated_legal_ministry,
+                    "Title in Hindi": hi_translated_title,
+                    "Legal Act Title in Hindi": hi_translated_legal_act_title,
+                    "Legal Ministry in Hindi": hi_translated_legal_ministry
+                })
+            counter += 1
+
+
+# Function to update translated metadata fields in DocumentMetaData object for each document and upload it to cloud storage
+async def update_translated_metadata(jiva_library: Library):
+    catalog = await jiva_library.catalog()
+    with open("tools/translated_new_meta_data.csv", "r") as csv_input:
         reader = csv.DictReader(csv_input)
         counter = 1
         for row in reader:
@@ -209,7 +262,7 @@ async def update_metadata(jiva_library: Library, csv_file_name: str):
                     "Kannada": row["Legal Act Title in Kannada"],
                     "Hindi": row["Legal Act Title in Hindi"]
                 },
-                "legal_act_jurisdiction": {
+                "legal_ministry": {
                     "Kannada": row["Legal Ministry in Kannada"],
                     "Hindi": row["Legal Ministry in Hindi"]
                 }
@@ -224,9 +277,11 @@ if __name__ == "__main__":
                            store=GoogleStorage(
                                 bucket_name=os.environ["JIVA_LIBRARY_BUCKET"],
                                 base_path=os.environ["JIVA_LIBRARY_PATH"]))
-    # Run the below command once for converting given sheet to csv file
-    # convert_google_sheets_meta_data_to_csv(required_sheet_name="Data_Arushi")
-    # Run the below command once for uploading docs in given csv file
-    # asyncio.run(upload_document(jiva_library=jiva_library, csv_file_name="Data_Arushi.csv"))
-    # Run the below command once to add translated fields to metadata
-    # asyncio.run(update_metadata(jiva_library=jiva_library, csv_file_name="translated_new_meta_data.csv"))
+    # Run the below command once separately for converting given sheet to csv file
+    # convert_google_sheets_meta_data_to_csv(required_sheet_name="Data_Anmol")
+    # Run the below command once separately for uploading docs in given csv file
+    # asyncio.run(act_uploading_process(jiva_library=jiva_library, csv_file_name="Data_Anmol.csv"))
+    # Run the below command once separately for translating metadata
+    # asyncio.run(translate_meta_data(jiva_library=jiva_library, translator=GoogleTranslator()))
+    # Run the below command once separately to add translated fields to metadata
+    asyncio.run(update_translated_metadata(jiva_library=jiva_library))
