@@ -2,8 +2,10 @@ from typing import List
 import openai
 from langchain.chains.qa_with_sources import load_qa_with_sources_chain
 from langchain.embeddings.openai import OpenAIEmbeddings
-from langchain.vectorstores import FAISS
-from langchain import PromptTemplate, OpenAI, LLMChain
+from langchain.vectorstores.faiss import FAISS
+from langchain.prompts import PromptTemplate
+from langchain.llms.openai import OpenAI
+from langchain.chains import LLMChain
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.decomposition import TruncatedSVD
 from sklearn.preprocessing import normalize

@@ -9,7 +9,6 @@ packages = [{include = "generic_qa"}]
 [tool.poetry.dependencies]
 python = ">=3.10, <4.0.0"
 fastapi = "^0.95.2"
-pydantic = "^1.10.7"
 uvicorn = {extras = ["standard"], version = "^0.22.0"}
 google-cloud-storage = "^2.9.0"
 python-multipart = "^0.0.6"
@@ -20,8 +19,6 @@ google-cloud-texttospeech = "^2.14.1"
 google-cloud-translate = "^3.11.1"
 google-cloud-speech = "^2.19.0"
 asyncpg = "^0.27.0"
-gpt-index = "0.5.25"
-langchain = "0.0.142"
 boto3 = "^1.26.135"
 python-jose = {extras = ["cryptography"], version = "^3.3.0"}
 passlib = {extras = ["bcrypt"], version = "^1.7.4"}
@@ -48,6 +45,15 @@ jb-storage = {path = "../packages/jb-storage", develop = true}
 jb-tenant = {path = "../packages/jb-tenant", develop = true}
 prometheus-fastapi-instrumentator = "^6.1.0"
 azure-cognitiveservices-speech = "^1.32.1"
+gpt-index = "0.8.42"
+langchain = "0.0.351"
+pypdf = "^3.17.3"
+openai = "0.27.8"
+aiohttp = "3.9.0"
+certifi = "2023.7.22"
+cryptography = "41.0.6"
+grpcio = "1.54.3"
+urllib3 = "1.26.18"
 
 [tool.pytest.ini_options]
 pythonpath = [

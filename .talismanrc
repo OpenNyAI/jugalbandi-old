@@ -28,7 +28,7 @@ fileignoreconfig:
 - filename: jb-generic-qa/generic_qa/server_middleware.py
   checksum: 41b07b21832eab895db301e6d08059459c0cb5f5065c7acef1e6dd373cf0dc7f
 - filename: jb-generic-qa/poetry.lock
-  checksum: 411b43d384ca25ae10532f1a6572e83bd9ffa928d7728d07dbe3cef26f2737a1
+  checksum: 15a8285ed2dab5d21c2389930bc6d6fcafa854727c840607dcddd4c7a4ba5243
 - filename: jb-generic-qa/pyproject.toml
   checksum: 4320042c5911d04a8ae236299fbec544a0cbe045a30e28297ad4aa848363ccd1
 - filename: jb-generic-qa/tests/test_server.py
@@ -114,7 +114,7 @@ fileignoreconfig:
 - filename: packages/jb-qa/jugalbandi/qa/query_with_langchain.py
   checksum: 7057717c218dd7ba7781c01eda87a668df893b317a043ae9ae03a2be68653ea0
 - filename: packages/jb-qa/poetry.lock
-  checksum: e4787a6d326a8aac48262019258ea52896e9bd30aaaaefda6647c1fc169de5f7
+  checksum: eb0b0510d26a2dd7f36194c9a3b085101faefefe0930ef67292440219900b8c3
 - filename: packages/jb-qa/tests/test_qa_engine.py
   checksum: 9ba58dc1ad8b8043c559c6c8889cb23affd488bbcb8b32dad9011cad7f4c6f89
 - filename: packages/jb-speech-processor/README.md
