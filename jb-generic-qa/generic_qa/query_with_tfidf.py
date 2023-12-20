@@ -1,4 +1,4 @@
-import PyPDF2
+import fitz
 from sklearn.feature_extraction.text import TfidfVectorizer
 import os
 import re
@@ -37,8 +37,8 @@ def get_title(directory):
     for filename in files_list:
         final_title = ""
         with open(directory + "/" + filename, "rb") as file:
-            pdf_reader = PyPDF2.PdfReader(file)
-            page_one = pdf_reader.pages[0].extract_text().strip()
+            doc = fitz.open(file)
+            page_one = doc[0].get_text("text", textpage=None, sort=False)
             page_one = page_one.split("\n")
             page_one = [page for page in page_one if page]
             titles = page_one[:10]
