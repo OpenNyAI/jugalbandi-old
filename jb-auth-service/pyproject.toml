@@ -9,7 +9,7 @@ packages = [{include = "auth_service"}]
 [tool.poetry.dependencies]
 python = ">=3.10, <4.0.0"
 fastapi = "0.100.0"
-pydantic = "^1.10.7"
+pydantic = "1.10.13"
 asyncpg = "0.28.0"
 uvicorn = {extras = ["standard"], version = "^0.22.0"}
 jb-core = {path = "../packages/jb-core", develop = true}
