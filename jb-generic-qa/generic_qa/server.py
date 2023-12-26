@@ -82,8 +82,8 @@ app = FastAPI(
     version="0.0.1",
     terms_of_service="http://example.com/terms/",
     contact={
-        "name": "Saurabh - Major contributor in Jugalbandi.ai",
-        "email": "saurabh@opennyai.org",
+        #"name": "Saurabh - Major contributor in Jugalbandi.ai",
+        #"email": "saurabh@opennyai.org",
     },
     license_info={
         "name": "MIT License",
