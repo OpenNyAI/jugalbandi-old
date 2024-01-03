@@ -10,7 +10,10 @@ from jugalbandi.core import (
   IncorrectInputException,
   SpeechProcessor as SpeechProcessorEnum
 )
-from jugalbandi.translator import Translator
+from jugalbandi.translator import (
+  Translator,
+  AzureTranslator
+)
 from jugalbandi.speech_processor import (
   SpeechProcessor,
   AzureSpeechProcessor,
@@ -450,6 +453,29 @@ async def get_text_to_speech(
     audio_bytes = await speech_processor.text_to_speech(text_query, language)
     audio_base64 = base64.b64encode(audio_bytes).decode('utf-8')
     return {"audio_bytes": audio_base64}
+
+
+# Testing Azure Translator endpoint
+@app.get(
+    "/azure-translator",
+    summary="Testing Azure Translator endpoint",
+    tags=["Language Processing"],
+)
+async def get_azure_translator(
+    authorization: Annotated[User, Depends(verify_access_token)],
+    text_query: str,
+    source_language: Language,
+    destination_language: Language,
+):
+    translator = AzureTranslator()
+    print(text_query)
+    translated_text = await translator.translate_text(text_query,
+                                                      source_language=source_language,
+                                                      destination_language=destination_language)
+    transliterated_text = await translator.transliterate_text(text_query,
+                                                              source_language=source_language)
+    return {"translated_text": translated_text,
+            "transliterated_text": transliterated_text}
 
 
 app.mount("/auth", auth_app)
