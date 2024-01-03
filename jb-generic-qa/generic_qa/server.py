@@ -54,9 +54,21 @@ from .server_helper import (
 )
 from prometheus_fastapi_instrumentator import Instrumentator
 import base64
+import logging
 # from .server_middleware import ApiKeyMiddleware
 
 init_env()
+
+logger = logging.getLogger("generic_qa")
+logging.basicConfig(level=logging.INFO)
+formatter = logging.Formatter(
+    '%(asctime)s - %(levelname)s - %(name)s - %(endpointname)s - %(message)s'
+)
+console_handler = logging.StreamHandler()
+console_handler.setFormatter(formatter)
+logger.addHandler(console_handler)
+logger.propagate = False
+
 
 api_description = """
 Jugalbandi.ai has a vector datastore that allows you to get factual Q&A over
@@ -344,6 +356,8 @@ async def get_rephrased_query(
     query_string: str,
 ):
     answer = await rephrased_question(query_string)
+    logger.info("Query: %s", query_string, extra={"endpointname": "/rephrased-query"})
+    logger.info("Answer: %s", answer, extra={"endpointname": "/rephrased-query"})
     return {"given_query": query_string, "rephrased_query": answer}
 
 
