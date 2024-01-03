@@ -168,15 +168,15 @@ class AzureTranslator(Translator):
                 response = await response.json()
                 return response[0]['translations'][0]['text']
 
-    async def transliterate_text(self, text: str, source_language: Language):
+    async def transliterate_text(self, text: str, source_language: Language, from_script: str, to_script: str) -> str:
         path = '/transliterate'
         constructed_url = self.endpoint + path
 
         params = {
             'api-version': '3.0',
             'language': source_language.name.lower(),
-            'fromScript': "Latn",
-            'toScript': "Deva"
+            'fromScript': from_script,
+            'toScript': to_script
         }
         headers = {
             'Ocp-Apim-Subscription-Key': self.subscription_key,

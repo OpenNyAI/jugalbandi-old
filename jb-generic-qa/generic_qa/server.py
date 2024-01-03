@@ -84,10 +84,6 @@ app = FastAPI(
     description=api_description,
     version="0.0.1",
     terms_of_service="http://example.com/terms/",
-    contact={
-        #"name": "Saurabh - Major contributor in Jugalbandi.ai",
-        #"email": "saurabh@opennyai.org",
-    },
     license_info={
         "name": "MIT License",
         "url": "https://www.jugalbandi.ai/",
@@ -455,27 +451,23 @@ async def get_text_to_speech(
     return {"audio_bytes": audio_base64}
 
 
-# Testing Azure Translator endpoint
+# Testing Azure Hinglish Transliterator endpoint
 @app.get(
-    "/azure-translator",
-    summary="Testing Azure Translator endpoint",
+    "/azure-hinglish-transliterator",
+    summary="Testing Azure Hinglish Transliterator endpoint",
     tags=["Language Processing"],
 )
-async def get_azure_translator(
+async def get_azure_hinglish_transliterator(
     authorization: Annotated[User, Depends(verify_access_token)],
     text_query: str,
-    source_language: Language,
-    destination_language: Language,
 ):
     translator = AzureTranslator()
     print(text_query)
-    translated_text = await translator.translate_text(text_query,
-                                                      source_language=source_language,
-                                                      destination_language=destination_language)
     transliterated_text = await translator.transliterate_text(text_query,
-                                                              source_language=source_language)
-    return {"translated_text": translated_text,
-            "transliterated_text": transliterated_text}
+                                                              source_language=Language.HI,
+                                                              from_script="Latn",
+                                                              to_script="Deva")
+    return {"transliterated_text": transliterated_text}
 
 
 app.mount("/auth", auth_app)
