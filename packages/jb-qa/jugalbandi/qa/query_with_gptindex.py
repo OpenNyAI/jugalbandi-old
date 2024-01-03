@@ -1,6 +1,6 @@
 import openai
 import json
-from gpt_index import GPTSimpleVectorIndex
+from llama_index import load_index_from_storage, StorageContext
 from jugalbandi.core.errors import InternalServerException, ServiceUnavailableException
 from jugalbandi.document_collection import DocumentCollection
 
@@ -9,9 +9,11 @@ async def querying_with_gptindex(document_collection: DocumentCollection, query:
     index_content = await document_collection.read_index_file("gpt-index", "index.json")
     index_content = index_content.decode('utf-8')
     index_dict = json.loads(index_content)
-    index = GPTSimpleVectorIndex.load_from_dict(index_dict)
+    storage_context = StorageContext.from_dict(index_dict)
+    index = load_index_from_storage(storage_context=storage_context)
+    query_engine = index.as_query_engine()
     try:
-        response = index.query(query)
+        response = query_engine.query(query)
         source_nodes = response.source_nodes
         source_text = []
         for i in range(len(source_nodes)):

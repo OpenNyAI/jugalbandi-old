@@ -3,15 +3,16 @@ import tempfile
 import aiofiles
 import openai
 from jugalbandi.core.errors import InternalServerException, ServiceUnavailableException
-from gpt_index import GPTSimpleVectorIndex, SimpleDirectoryReader
+from llama_index import VectorStoreIndex, SimpleDirectoryReader
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain.docstore.document import Document
 from langchain.embeddings.openai import OpenAIEmbeddings
-from langchain.vectorstores import FAISS
+from langchain.vectorstores.faiss import FAISS
 from jugalbandi.document_collection import (
     DocumentCollection,
     DocumentFormat,
 )
+import json
 
 
 class Indexer(ABC):
@@ -26,10 +27,11 @@ class GPTIndexer(Indexer):
             files = [document_collection.local_file_path(file)
                      async for file in document_collection.list_files()]
             documents = SimpleDirectoryReader(input_files=files).load_data()
-            index = GPTSimpleVectorIndex.from_documents(documents)
-            index_content = index.save_to_string()
+            index = VectorStoreIndex.from_documents(documents)
+            index_content = index.storage_context.to_dict()
+            index_str = json.dumps(index_content)
             await document_collection.write_index_file("gpt-index", "index.json",
-                                                       bytes(index_content, "utf-8"))
+                                                       bytes(index_str, "utf-8"))
         except openai.error.RateLimitError as e:
             raise ServiceUnavailableException(
                 f"OpenAI API request exceeded rate limit: {e}"

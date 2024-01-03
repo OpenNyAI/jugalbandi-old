@@ -11,9 +11,11 @@ python = ">=3.10, <4.0.0"
 gcloud-aio-storage = "^8.2.0"
 google-cloud-storage = "^2.9.0"
 tenacity = "^8.2.2"
-aiohttp = "^3.8.4"
+aiohttp = "3.9.0"
 aiofiles = "^23.1.0"
 types-aiofiles = "^23.1.0.4"
+cryptography = "41.0.6"
+urllib3 = "1.26.18"
 
 [tool.poetry.group.dev.dependencies]
 black = "^23.3.0"

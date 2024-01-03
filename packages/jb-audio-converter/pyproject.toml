@@ -11,6 +11,7 @@ python = ">=3.10, <4.0.0"
 aiofiles = "^23.1.0"
 pydub = "^0.25.1"
 httpx = "^0.24.1"
+certifi = "2023.7.22"
 
 [tool.poetry.group.dev.dependencies]
 black = "^23.3.0"

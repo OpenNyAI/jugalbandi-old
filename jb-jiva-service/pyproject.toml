@@ -8,7 +8,7 @@ packages = [{include = "jiva"}]
 
 [tool.poetry.dependencies]
 python = ">=3.10, <3.13"
-pydantic = "^1.10.7"
+pydantic = "1.10.13"
 uvicorn = {extras = ["standard"], version = "^0.22.0"}
 google-cloud-storage = "^2.9.0"
 jb-core = {path = "../packages/jb-core", develop = true}
@@ -25,7 +25,7 @@ celery = "^5.3.1"
 redis = "^4.6.0"
 jb-storage = {path = "../packages/jb-storage", develop = true}
 python-multipart = "^0.0.6"
-pillow = "^10.0.0"
+pillow = "10.0.1"
 asyncpg = "^0.28.0"
 fastapi = "0.100.0"
 jb-auth-service = {path = "../jb-auth-service", develop = true}
@@ -38,10 +38,13 @@ pandas = "^2.1.1"
 roman = "^4.1"
 jb-translator = {path = "../packages/jb-translator", develop = true}
 gspread = "^5.11.2"
-langchain = "0.0.313"
+langchain = "0.0.351"
 faiss-cpu = "^1.7.4"
 tiktoken = "^0.5.1"
 jb-jiva-repository = {path = "../packages/jb-jiva-repository", develop = true}
+aiohttp = "3.9.0"
+cryptography = "41.0.6"
+urllib3 = "1.26.18"
 
 [tool.pytest.ini_options]
 pythonpath = [

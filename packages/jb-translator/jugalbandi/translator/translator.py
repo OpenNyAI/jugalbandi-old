@@ -168,6 +168,30 @@ class AzureTranslator(Translator):
                 response = await response.json()
                 return response[0]['translations'][0]['text']
 
+    async def transliterate_text(self, text: str, source_language: Language):
+        path = '/transliterate'
+        constructed_url = self.endpoint + path
+
+        params = {
+            'api-version': '3.0',
+            'language': source_language.name.lower(),
+            'fromScript': "Latn",
+            'toScript': "Deva"
+        }
+        headers = {
+            'Ocp-Apim-Subscription-Key': self.subscription_key,
+            'Ocp-Apim-Subscription-Region': self.resource_location,
+            'Content-type': 'application/json',
+            'X-ClientTraceId': str(uuid.uuid4())
+        }
+        body = [{'text': text}]
+
+        async with aiohttp.ClientSession(connector=aiohttp.TCPConnector(ssl=False)) as session:
+            async with session.post(constructed_url, params=params, headers=headers, json=body) as response:
+                response = await response.json()
+                print(response)
+                return response[0]['text']
+
 
 class GoogleTranslator(Translator):
     async def translate_text(

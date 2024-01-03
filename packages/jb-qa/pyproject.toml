@@ -8,11 +8,8 @@ packages = [{include = "jugalbandi/qa"}]
 
 [tool.poetry.dependencies]
 python = ">=3.10, <4.0.0"
-pydantic = "^1.10.8"
-asyncpg = "^0.27.0"
-gpt-index = "0.5.25"
-langchain = "0.0.142"
-pypdf2 = "^3.0.1"
+pydantic = "1.10.13"
+asyncpg = "0.28.0"
 cachetools = "^5.3.1"
 types-cachetools = "^5.3.0.5"
 aiofiles = "^23.1.0"
@@ -27,7 +24,16 @@ faiss-cpu = "^1.7.4"
 pymupdf = "1.22.3"
 python-docx = "^0.8.11"
 docx2txt = "^0.8"
-scikit-learn = "^1.2.2"
+scikit-learn = "1.2.2"
+gpt-index = "0.8.42"
+langchain = "0.0.351"
+pypdf = "^3.17.3"
+openai = "0.27.8"
+aiohttp = "3.9.0"
+certifi = "2023.7.22"
+cryptography = "41.0.6"
+grpcio = "1.56.2"
+urllib3 = "1.26.18"
 
 
 [tool.poetry.group.dev.dependencies]
