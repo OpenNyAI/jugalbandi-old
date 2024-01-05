@@ -42,7 +42,6 @@ docx2txt = "^0.8"
 scikit-learn = "^1.2.2"
 jb-storage = {path = "../packages/jb-storage", develop = true}
 jb-tenant = {path = "../packages/jb-tenant", develop = true}
-prometheus-fastapi-instrumentator = "^6.1.0"
 azure-cognitiveservices-speech = "^1.32.1"
 gpt-index = "0.8.42"
 langchain = "0.0.351"
@@ -53,6 +52,11 @@ certifi = "2023.7.22"
 cryptography = "41.0.6"
 grpcio = "1.56.2"
 urllib3 = "1.26.18"
+opentelemetry-distro = "0.43b0"
+opentelemetry-instrumentation-fastapi = "0.43b0"
+opentelemetry-instrumentation-logging = "0.43b0"
+opentelemetry-exporter-otlp = "1.22.0"
+prometheus-client = "0.19.0"
 
 [tool.pytest.ini_options]
 pythonpath = [

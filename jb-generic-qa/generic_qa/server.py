@@ -1,7 +1,7 @@
 from .server_env import init_env
 from typing import Annotated, List
 from fastapi import FastAPI, UploadFile, Depends, Query, File
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security.api_key import APIKey
 from jugalbandi.core import (
@@ -52,17 +52,25 @@ from .server_helper import (
     get_translator,
     User,
 )
-from prometheus_fastapi_instrumentator import Instrumentator
 import base64
 import logging
+import os
+import httpx
+from opentelemetry.propagate import inject
+from tools.utils import PrometheusMiddleware, metrics, setting_otlp
 # from .server_middleware import ApiKeyMiddleware
 
 init_env()
 
+APP_NAME = os.environ.get("APP_NAME", "generic_qa")
+EXPOSE_PORT = os.environ.get("EXPOSE_PORT", 8080)
+OTLP_GRPC_ENDPOINT = os.environ.get("OTLP_GRPC_ENDPOINT", "http://tempo:4317")
+
 logger = logging.getLogger("generic_qa")
 logging.basicConfig(level=logging.INFO)
 formatter = logging.Formatter(
-    '%(asctime)s - %(levelname)s - %(name)s - %(endpointname)s - %(message)s'
+    "%(asctime)s %(levelname)s [%(name)s] [%(filename)s:%(lineno)d] [trace_id=%(otelTraceID)s"
+    " span_id=%(otelSpanID)s resource.service.name=%(otelServiceName)s] - %(message)s"
 )
 console_handler = logging.StreamHandler()
 console_handler.setFormatter(formatter)
@@ -103,6 +111,14 @@ app = FastAPI(
 )
 
 
+# Setting metrics middleware
+app.add_middleware(PrometheusMiddleware, app_name=APP_NAME)
+app.add_route("/metrics", metrics)
+
+# Setting OpenTelemetry exporter
+setting_otlp(app, APP_NAME, OTLP_GRPC_ENDPOINT)
+
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -111,7 +127,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-Instrumentator().instrument(app).expose(app)
 # app.add_middleware(ApiKeyMiddleware, tenant_repository=get_tenant_repository())
 
 
@@ -130,6 +145,21 @@ async def custom_exception_handler(request, exception):
 @app.get("/")
 async def root():
     return {"message": "Welcome to Jugalbandi API"}
+
+
+@app.get("/chain")
+async def chain(response: Response):
+    headers = {}
+    inject(headers)  # inject trace info to header
+    logging.critical(headers)
+
+    async with httpx.AsyncClient() as client:
+        await client.get(
+            "http://localhost:8080/",
+            headers=headers,
+        )
+    logger.info("Chain Finished")
+    return {"path": "/chain"}
 
 
 @app.get(
@@ -356,8 +386,8 @@ async def get_rephrased_query(
     query_string: str,
 ):
     answer = await rephrased_question(query_string)
-    logger.info("Query: %s", query_string, extra={"endpointname": "/rephrased-query"})
-    logger.info("Answer: %s", answer, extra={"endpointname": "/rephrased-query"})
+    logger.info("Query: %s", query_string)
+    logger.info("Answer: %s", answer)
     return {"given_query": query_string, "rephrased_query": answer}
 
 
