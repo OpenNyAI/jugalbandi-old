@@ -18,7 +18,7 @@ services:
     ports:
       - '3100:3100'
 
-  app-a:
+  generic_qa:
     # build:
     #   context: ../
     #   dockerfile: ./jb-generic-qa/tools/Dockerfile
@@ -30,7 +30,7 @@ services:
     env_file:
       - .env
     environment:
-      APP_NAME: 'app-a'
+      APP_NAME: 'generic_qa'
     logging: *default-logging
 
   prometheus:

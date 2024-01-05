@@ -10,10 +10,7 @@ from jugalbandi.core import (
   IncorrectInputException,
   SpeechProcessor as SpeechProcessorEnum
 )
-from jugalbandi.translator import (
-  Translator,
-  AzureTranslator
-)
+from jugalbandi.translator import Translator
 from jugalbandi.speech_processor import (
   SpeechProcessor,
   AzureSpeechProcessor,
@@ -58,13 +55,20 @@ import os
 import httpx
 from opentelemetry.propagate import inject
 from tools.utils import PrometheusMiddleware, metrics, setting_otlp
-# from .server_middleware import ApiKeyMiddleware
+
 
 init_env()
 
 APP_NAME = os.environ.get("APP_NAME", "generic_qa")
 EXPOSE_PORT = os.environ.get("EXPOSE_PORT", 8080)
 OTLP_GRPC_ENDPOINT = os.environ.get("OTLP_GRPC_ENDPOINT", "http://tempo:4317")
+
+
+class EndpointFilter(logging.Filter):
+    # Uvicorn endpoint access log filter
+    def filter(self, record: logging.LogRecord) -> bool:
+        return record.getMessage().find("GET /metrics") == -1
+
 
 logger = logging.getLogger("generic_qa")
 logging.basicConfig(level=logging.INFO)
@@ -75,6 +79,7 @@ formatter = logging.Formatter(
 console_handler = logging.StreamHandler()
 console_handler.setFormatter(formatter)
 logger.addHandler(console_handler)
+logger.addFilter(EndpointFilter())
 logger.propagate = False
 
 
@@ -127,8 +132,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# app.add_middleware(ApiKeyMiddleware, tenant_repository=get_tenant_repository())
-
 
 @app.exception_handler(Exception)
 async def custom_exception_handler(request, exception):
@@ -136,6 +139,7 @@ async def custom_exception_handler(request, exception):
         status_code = exception.status_code
     else:
         status_code = 500
+    logger.exception(str(exception))
     return JSONResponse(
         status_code=status_code,
         content={"error_message": str(exception)}
@@ -151,7 +155,7 @@ async def root():
 async def chain(response: Response):
     headers = {}
     inject(headers)  # inject trace info to header
-    logging.critical(headers)
+    logger.critical(headers)
 
     async with httpx.AsyncClient() as client:
         await client.get(
@@ -493,25 +497,6 @@ async def get_text_to_speech(
     audio_bytes = await speech_processor.text_to_speech(text_query, language)
     audio_base64 = base64.b64encode(audio_bytes).decode('utf-8')
     return {"audio_bytes": audio_base64}
-
-
-# Testing Azure Hinglish Transliterator endpoint
-@app.get(
-    "/azure-hinglish-transliterator",
-    summary="Testing Azure Hinglish Transliterator endpoint",
-    tags=["Language Processing"],
-)
-async def get_azure_hinglish_transliterator(
-    authorization: Annotated[User, Depends(verify_access_token)],
-    text_query: str,
-):
-    translator = AzureTranslator()
-    print(text_query)
-    transliterated_text = await translator.transliterate_text(text_query,
-                                                              source_language=Language.HI,
-                                                              from_script="Latn",
-                                                              to_script="Deva")
-    return {"transliterated_text": transliterated_text}
 
 
 app.mount("/auth", auth_app)

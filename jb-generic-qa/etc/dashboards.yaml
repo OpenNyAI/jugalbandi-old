@@ -1,6 +1,6 @@
 apiVersion: 1
 providers:
-- name: 'FastAPI Observability'
+- name: 'Generic QA Dashboard'
   orgId: 1
   folder: ''
   type: 'file'
