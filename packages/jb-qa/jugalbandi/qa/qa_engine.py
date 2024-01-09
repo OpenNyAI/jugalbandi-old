@@ -11,11 +11,7 @@ from jugalbandi.core.language import Language
 from jugalbandi.core.media_format import MediaFormat
 from jugalbandi.core.errors import IncorrectInputException
 from .query_with_gptindex import querying_with_gptindex
-from .query_with_langchain import (
-    querying_with_langchain,
-    querying_with_langchain_gpt3_5,
-    querying_with_langchain_gpt4
-)
+from .query_with_langchain import querying_with_langchain
 
 
 class QueryResponse(BaseModel):
@@ -24,12 +20,11 @@ class QueryResponse(BaseModel):
     answer: str
     answer_in_english: str = ""
     audio_output_url: str = ""
-    source_text: List[Any]
+    source_text: List[Any] = []
 
 
 class LangchainQAModel(Enum):
-    GPT3 = "gpt-3"
-    GPT35_TURBO = "gpt-3.5-turbo"
+    GPT35_TURBO = "gpt-3.5-turbo-1106"
     GPT4 = "gpt-4"
 
 
@@ -120,22 +115,12 @@ class LangchainQAEngine:
         self.speech_processor = speech_processor
         self.translator = translator
         self.model = model
-        self.models_dict = {
-            LangchainQAModel.GPT3: lambda a, b, c, d, e:
-            querying_with_langchain(a, b),
-            LangchainQAModel.GPT35_TURBO: lambda a, b, c, d, e:
-            querying_with_langchain_gpt3_5(a, b, c, d, e),
-            LangchainQAModel.GPT4: lambda a, b, c, d, e:
-            querying_with_langchain_gpt4(a, b, c),
-        }
 
     async def query(
         self,
         query: str = "",
         speech_query_url: str = "",
         prompt: str = "",
-        source_text_filtering: bool = True,
-        model_size: str = "4k",
         input_language: Language = Language.EN,
         output_format: MediaFormat = MediaFormat.TEXT,
     ) -> QueryResponse:
@@ -144,15 +129,13 @@ class LangchainQAEngine:
         answer_in_english = ""
         query_in_english = ""
         audio_output_url = ""
-        source_text = []
         if query == "" and speech_query_url == "":
             raise IncorrectInputException("Query input is missing")
 
         if query != "":
             if input_language.value == "English":
-                answer, source_text = await self.models_dict[self.model](
-                    self.document_collection, query, prompt,
-                    source_text_filtering, model_size)
+                answer = await querying_with_langchain(
+                    self.document_collection, query, prompt, self.model.value)
             if output_format.name == "VOICE":
                 is_voice = True
 
@@ -164,9 +147,8 @@ class LangchainQAEngine:
         if answer == "":
             query_in_english = await self.translator.translate_text(
                 query, input_language, Language.EN)
-            answer_in_english, source_text = await self.models_dict[self.model](
-                self.document_collection, query_in_english, prompt,
-                source_text_filtering, model_size)
+            answer_in_english = await querying_with_langchain(
+                self.document_collection, query_in_english, prompt, self.model.value)
             answer = await self.translator.translate_text(
                     answer_in_english, Language.EN, input_language)
 
@@ -179,8 +161,8 @@ class LangchainQAEngine:
             audio_output_url = await self.document_collection.audio_file_public_url(
                 filename)
 
-        return QueryResponse(query=query, query_in_english=query_in_english,
+        return QueryResponse(query=query,
+                             query_in_english=query_in_english,
                              answer=answer,
                              answer_in_english=answer_in_english,
-                             audio_output_url=audio_output_url,
-                             source_text=source_text)
+                             audio_output_url=audio_output_url)

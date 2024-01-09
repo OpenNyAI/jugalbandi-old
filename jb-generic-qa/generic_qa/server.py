@@ -26,7 +26,7 @@ from jugalbandi.document_collection import (
 from jugalbandi.qa import (
     QAEngine,
     QueryResponse,
-    GPTIndexer,
+    # GPTIndexer,
     LangchainIndexer,
     TextConverter,
     rephrased_question,
@@ -38,10 +38,8 @@ from .server_helper import (
     get_api_key,
     get_tenant_repository,
     get_feedback_repository,
-    get_gpt_index_qa_engine,
-    get_langchain_gpt3_qa_engine,
-    get_langchain_gpt35_turbo_qa_engine,
-    get_langchain_gpt4_qa_engine,
+    # get_gpt_index_qa_engine,
+    get_langchain_qa_engine,
     get_text_converter,
     verify_access_token,
     get_document_repository,
@@ -194,10 +192,10 @@ async def upload_files(
     async for filename in document_collection.list_files():
         await text_converter.textify(filename, document_collection)
 
-    gpt_indexer = GPTIndexer()
+    # gpt_indexer = GPTIndexer()
     langchain_indexer = LangchainIndexer()
 
-    await gpt_indexer.index(document_collection)
+    # await gpt_indexer.index(document_collection)
     await langchain_indexer.index(document_collection)
     return {
         "uuid_number": document_collection.id,
@@ -205,77 +203,37 @@ async def upload_files(
     }
 
 
-@app.get(
-    "/query-with-gptindex",
-    summary="Query using gpt-index model",
-    tags=["Q&A over Document Store"],
-)
-async def query_using_gptindex(
-    authorization: Annotated[User, Depends(verify_access_token)],
-    api_key: Annotated[APIKey, Depends(get_api_key)],
-    query_string: str,
-    gpt_index_qa_engine: Annotated[QAEngine, Depends(get_gpt_index_qa_engine)],
-) -> QueryResponse:
-    response = await gpt_index_qa_engine.query(query=query_string)
-    return {
-        "query": query_string,
-        "answer": response.answer,
-        "source_text": response.source_text,
-    }
+# @app.get(
+#     "/query-with-gptindex",
+#     summary="Query using gpt-index model",
+#     tags=["Q&A over Document Store"],
+#     include_in_schema=False,
+# )
+# async def query_using_gptindex(
+#     authorization: Annotated[User, Depends(verify_access_token)],
+#     api_key: Annotated[APIKey, Depends(get_api_key)],
+#     query_string: str,
+#     gpt_index_qa_engine: Annotated[QAEngine, Depends(get_gpt_index_qa_engine)],
+# ) -> QueryResponse:
+#     response = await gpt_index_qa_engine.query(query=query_string)
+#     return {
+#         "query": query_string,
+#         "answer": response.answer,
+#         "source_text": response.source_text,
+#     }
 
 
 @app.get(
-    "/query-with-langchain",
-    summary="Query using langchain (GPT-3)",
+    "/query-with-text",
+    summary="Query with text using langchain Models and custom prompt",
     tags=["Q&A over Document Store"],
 )
-async def query_using_langchain(
+async def query_with_text(
     authorization: Annotated[User, Depends(verify_access_token)],
     api_key: Annotated[APIKey, Depends(get_api_key)],
     query_string: str,
-    langchain_qa_engine: Annotated[QAEngine, Depends(get_langchain_gpt3_qa_engine)],
-) -> QueryResponse:
-    response = await langchain_qa_engine.query(query=query_string)
-    return {
-        "query": query_string,
-        "answer": response.answer,
-        "source_text": response.source_text,
-    }
-
-
-@app.get(
-    "/query-with-langchain-gpt3-5",
-    summary="Query using langchain (GPT-3.5)",
-    tags=["Q&A over Document Store"],
-)
-async def query_using_langchain_with_gpt3_5(
-    authorization: Annotated[User, Depends(verify_access_token)],
-    api_key: Annotated[APIKey, Depends(get_api_key)],
-    query_string: str,
-    langchain_qa_engine: Annotated[
-        QAEngine, Depends(get_langchain_gpt35_turbo_qa_engine)
-    ],
-):
-    response = await langchain_qa_engine.query(query=query_string)
-    return {
-        "query": query_string,
-        "answer": response.answer,
-        "source_text": response.source_text,
-    }
-
-
-@app.get(
-    "/query-with-langchain-gpt3-5-custom-prompt",
-    summary="Query using langchain (GPT-3.5) with custom prompt",
-    tags=["Q&A over Document Store"],
-)
-async def query_using_langchain_with_gpt3_5_and_custom_prompt(
-    authorization: Annotated[User, Depends(verify_access_token)],
-    api_key: Annotated[APIKey, Depends(get_api_key)],
-    query_string: str,
-    langchain_qa_engine: Annotated[
-        QAEngine, Depends(get_langchain_gpt35_turbo_qa_engine)
-    ],
+    langchain_qa_engine: Annotated[QAEngine,
+                                   Depends(get_langchain_qa_engine)],
     prompt: str = Query(default="",
                         description=(
                             "Give prompts in this format. "
@@ -287,99 +245,43 @@ async def query_using_langchain_with_gpt3_5_and_custom_prompt(
                             "you admit that you don't know"))
 ):
     response = await langchain_qa_engine.query(query=query_string,
-                                               prompt=prompt,
-                                               source_text_filtering=False)
+                                               prompt=prompt)
     return {
         "query": query_string,
-        "answer": response.answer,
-        "source_text": response.source_text,
+        "answer": response.answer
     }
 
 
 @app.get(
-    "/query-with-langchain-gpt4",
-    summary="Query using langchain (GPT-4)",
+    "/query-with-voice",
+    summary="Query with voice using langchain Models and custom prompt",
     tags=["Q&A over Document Store"],
 )
-async def query_using_langchain_with_gpt4(
-    authorization: Annotated[User, Depends(verify_access_token)],
-    api_key: Annotated[APIKey, Depends(get_api_key)],
-    query_string: str,
-    langchain_qa_engine: Annotated[QAEngine, Depends(get_langchain_gpt4_qa_engine)],
-):
-    response = await langchain_qa_engine.query(query=query_string)
-    return {
-        "query": query_string,
-        "answer": response.answer,
-    }
-
-
-@app.get(
-    "/query-with-langchain-gpt4-custom-prompt",
-    summary="Query using langchain (GPT-4) with custom prompt",
-    tags=["Q&A over Document Store"],
-)
-async def query_using_langchain_with_gpt4_and_custom_prompt(
-    authorization: Annotated[User, Depends(verify_access_token)],
-    api_key: Annotated[APIKey, Depends(get_api_key)],
-    query_string: str,
-    langchain_qa_engine: Annotated[QAEngine, Depends(get_langchain_gpt4_qa_engine)],
-    prompt: str = "",
-):
-    response = await langchain_qa_engine.query(query=query_string, prompt=prompt)
-    return {
-        "query": query_string,
-        "answer": response.answer,
-    }
-
-
-@app.get(
-    "/query-using-voice",
-    summary="Query using voice with langchain (GPT-3.5) with custom prompt",
-    tags=["Q&A over Document Store"],
-)
-async def query_with_voice_input_gpt3_5(
+async def query_with_voice(
     authorization: Annotated[User, Depends(verify_access_token)],
     api_key: Annotated[APIKey, Depends(get_api_key)],
     langchain_qa_engine: Annotated[QAEngine,
-                                   Depends(get_langchain_gpt35_turbo_qa_engine)],
+                                   Depends(get_langchain_qa_engine)],
     input_language: Language,
     output_format: MediaFormat,
     query_text: str = "",
     audio_url: str = "",
-    prompt: str = "",
+    prompt: str = Query(default="",
+                        description=(
+                            "Give prompts in this format. "
+                            "The first sentence of the prompt is necessary. "
+                            "The second sentence can be customized. \n\n"
+                            "You are a helpful assistant who helps with answering "
+                            "questions based on the provided information. If the "
+                            "information cannot be found in the text provided, "
+                            "you admit that you don't know"))
 ) -> QueryResponse:
     return await langchain_qa_engine.query(
         query=query_text,
         speech_query_url=audio_url,
+        prompt=prompt,
         input_language=input_language,
         output_format=output_format,
-        prompt=prompt,
-        source_text_filtering=False,
-    )
-
-
-@app.get(
-    "/query-using-voice-gpt4",
-    summary="Query using voice with langchain (GPT-4) with custom prompt",
-    tags=["Q&A over Document Store"],
-)
-async def query_with_voice_input_gpt4(
-    authorization: Annotated[User, Depends(verify_access_token)],
-    api_key: Annotated[APIKey, Depends(get_api_key)],
-    langchain_qa_engine: Annotated[QAEngine, Depends(get_langchain_gpt4_qa_engine)],
-    input_language: Language,
-    output_format: MediaFormat,
-    query_text: str = "",
-    audio_url: str = "",
-    prompt: str = "",
-) -> QueryResponse:
-    return await langchain_qa_engine.query(
-        query=query_text,
-        speech_query_url=audio_url,
-        input_language=input_language,
-        output_format=output_format,
-        prompt=prompt,
     )
 
 

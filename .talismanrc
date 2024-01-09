@@ -20,7 +20,7 @@ fileignoreconfig:
 - filename: jb-generic-qa/Titles.csv
   checksum: 156dd50776c1488e4f1d723002ca7de4c799b119f2aac87996036970c4fbb424
 - filename: jb-generic-qa/generic_qa/server.py
-  checksum: d2880b1ebef4249c54a60860c3a0565c69eccf6b5f5af958ef058ad9bd16b82c
+  checksum: f2783b13f2172d83a12c13291b4f2f9ecb3fd85fc07be04fc4e757ef42810b7c
 - filename: jb-generic-qa/generic_qa/server_env.py
   checksum: ea4a679e55708882f1e719e437afb3808c86bc5b5d8e40777c084e77d9436d50
 - filename: jb-generic-qa/generic_qa/server_helper.py

@@ -99,39 +99,16 @@ async def get_gpt_index_qa_engine(
     return GPTIndexQAEngine(document_collection, speech_processor, translator)
 
 
-async def get_langchain_gpt3_qa_engine(
+async def get_langchain_qa_engine(
     document_collection: Annotated[
         DocumentCollection, Depends(get_document_collection)
     ],
     speech_processor: Annotated[DocumentCollection, Depends(get_speech_processor)],
     translator: Annotated[Translator, Depends(get_translator)],
+    gpt_model: LangchainQAModel
 ):
     return LangchainQAEngine(
-        document_collection, speech_processor, translator, LangchainQAModel.GPT3
-    )
-
-
-async def get_langchain_gpt35_turbo_qa_engine(
-    document_collection: Annotated[
-        DocumentCollection, Depends(get_document_collection)
-    ],
-    speech_processor: Annotated[DocumentCollection, Depends(get_speech_processor)],
-    translator: Annotated[Translator, Depends(get_translator)],
-):
-    return LangchainQAEngine(
-        document_collection, speech_processor, translator, LangchainQAModel.GPT35_TURBO
-    )
-
-
-async def get_langchain_gpt4_qa_engine(
-    document_collection: Annotated[
-        DocumentCollection, Depends(get_document_collection)
-    ],
-    speech_processor: Annotated[DocumentCollection, Depends(get_speech_processor)],
-    translator: Annotated[Translator, Depends(get_translator)],
-):
-    return LangchainQAEngine(
-        document_collection, speech_processor, translator, LangchainQAModel.GPT4
+        document_collection, speech_processor, translator, gpt_model
     )
 
 
