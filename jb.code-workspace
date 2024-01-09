@@ -65,8 +65,16 @@
       "path": "packages/jb-tenant"
     },
     {
+      "name": "Package jb-logging",
+      "path": "packages/jb-logging"
+    },
+    {
       "name": "Package jb-jiva-repository",
       "path": "packages/jb-jiva-repository"
+    },
+    {
+      "name": "Package jb-experimentation",
+      "path": "packages/jb-experimentation"
     },
     {
       "name": "Documentation",
@@ -164,6 +172,11 @@
     "java.configuration.updateBuildConfiguration": "interactive",
     "[python]": {
       "editor.defaultFormatter": "ms-python.black-formatter"
+    },
+    "[typescript][typescriptreact]": {
+      "editor.codeActionsOnSave": {
+        "source.fixAll": "explicit"
+      }
     }
   }
 }

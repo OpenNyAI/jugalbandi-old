@@ -105,6 +105,12 @@ fileignoreconfig:
   checksum: 72437be3c51d5a156563778f12a96c9bf9915202a65b81ba934450823937a482
 - filename: packages/jb-library/tests/abcd.pdf
   checksum: a3641255d94216f71b12fb101a478515c7ce1e897d0dfad534a0e38c1aaceb0f
+- filename: packages/jb-logging/jugalbandi/logging/logging_repository.py
+  checksum: 84fb2f4baeb96100dc6f3c1f9bdcd8998c889171ba1c94fc189c05fdbeb4cb6b
+- filename: packages/jb-logging/jugalbandi/logging/logging_settings.py
+  checksum: 23f51e4801263cb33b5ad5f02a41f212dcc271070a7d6a346e80f22b9e693f3e
+- filename: packages/jb-logging/poetry.lock
+  checksum: a1332f84f3ddfe834f3bd43355ad190dc1dc42c5839bdf15ceb0323f12308ef3
 - filename: packages/jb-qa/README.md
   checksum: ec348ecf2d0792e55f54309d5baef05925b6e82c02cc4a60034e994f5c575209
 - filename: packages/jb-qa/jugalbandi/qa/qa_db.py
