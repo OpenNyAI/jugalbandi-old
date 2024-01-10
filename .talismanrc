@@ -106,9 +106,9 @@ fileignoreconfig:
 - filename: packages/jb-library/tests/abcd.pdf
   checksum: a3641255d94216f71b12fb101a478515c7ce1e897d0dfad534a0e38c1aaceb0f
 - filename: packages/jb-logging/jugalbandi/logging/logging_repository.py
-  checksum: 84fb2f4baeb96100dc6f3c1f9bdcd8998c889171ba1c94fc189c05fdbeb4cb6b
+  checksum: ec06b2c89e7edf8c73b8ec03a3d75cff90504b82ea11926d658dadd5f9b0e1c4
 - filename: packages/jb-logging/jugalbandi/logging/logging_settings.py
-  checksum: 23f51e4801263cb33b5ad5f02a41f212dcc271070a7d6a346e80f22b9e693f3e
+  checksum: 6de9db7abca460338bdf32f26886ebdc8241692a008a723edafc532c87b3f7bb
 - filename: packages/jb-logging/poetry.lock
   checksum: a1332f84f3ddfe834f3bd43355ad190dc1dc42c5839bdf15ceb0323f12308ef3
 - filename: packages/jb-qa/README.md

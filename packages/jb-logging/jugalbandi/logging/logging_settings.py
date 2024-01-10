@@ -4,23 +4,23 @@ from pydantic import BaseSettings, Field
 
 
 class LoggingSettings(BaseSettings):
-    logging_feedback_database_ip: Annotated[
-        Optional[str], Field(..., env="LOGGING_FEEDBACK_DATABASE_IP")
+    logging_database_ip: Annotated[
+        Optional[str], Field(..., env="LOGGING_DATABASE_IP")
     ] = None
-    logging_feedback_database_port: Annotated[
-        Optional[str], Field(..., env="LOGGING_FEEDBACK_DATABASE_PORT")
+    logging_database_port: Annotated[
+        Optional[str], Field(..., env="LOGGING_DATABASE_PORT")
     ] = None
-    logging_feedback_database_username: Annotated[
-        Optional[str], Field(..., env="LOGGING_FEEDBACK_DATABASE_USERNAME")
+    logging_database_username: Annotated[
+        Optional[str], Field(..., env="LOGGING_DATABASE_USERNAME")
     ] = None
-    logging_feedback_database_password: Annotated[
-        Optional[str], Field(..., env="LOGGING_FEEDBACK_DATABASE_PASSWORD")
+    logging_database_password: Annotated[
+        Optional[str], Field(..., env="LOGGING_DATABASE_PASSWORD")
     ] = None
-    logging_feedback_database_name: Annotated[
-        Optional[str], Field(..., env="LOGGING_FEEDBACK_DATABASE_NAME")
+    logging_database_name: Annotated[
+        Optional[str], Field(..., env="LOGGING_DATABASE_NAME")
     ] = None
 
 
 @cached(cache={})
-def get_logging_feedback_settings():
+def get_logging_settings():
     return LoggingSettings()
