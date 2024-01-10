@@ -1698,6 +1698,25 @@ type = "directory"
 url = "../packages/jb-feedback"
 
 [[package]]
+name = "jb-logging"
+version = "0.1.0"
+description = ""
+optional = false
+python-versions = ">=3.10, <4.0.0"
+files = []
+develop = true
+
+[package.dependencies]
+asyncpg = "0.28.0"
+jb-core = {path = "../jb-core", develop = true}
+pydantic = "1.10.13"
+pytz = "^2023.3"
+
+[package.source]
+type = "directory"
+url = "../packages/jb-logging"
+
+[[package]]
 name = "jb-qa"
 version = "0.1.0"
 description = ""
@@ -4261,4 +4280,4 @@ testing = ["big-O", "jaraco.functools", "jaraco.itertools", "more-itertools", "p
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.10, <4.0.0"
-content-hash = "a6ff06e82c25f522cd35f4c3a4c5b475558852f4233d9297c44d16f976e159e1"
+content-hash = "bc7b2eb9ee4eaef4b11ea63dc710b234b0c7ff26df4c84f97de8d8aafb0ecb5c"

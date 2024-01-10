@@ -46,7 +46,7 @@ from .server_helper import (
     User,
 )
 import base64
-import logging
+from jugalbandi.logging import Logger
 import os
 import httpx
 from opentelemetry.propagate import inject
@@ -59,25 +59,7 @@ APP_NAME = os.environ.get("APP_NAME", "generic_qa")
 EXPOSE_PORT = os.environ.get("EXPOSE_PORT", 8080)
 OTLP_GRPC_ENDPOINT = os.environ.get("OTLP_GRPC_ENDPOINT", "http://tempo:4317")
 
-
-class EndpointFilter(logging.Filter):
-    # Uvicorn endpoint access log filter
-    def filter(self, record: logging.LogRecord) -> bool:
-        return record.getMessage().find("GET /metrics") == -1
-
-
-logger = logging.getLogger("generic_qa")
-logging.basicConfig(level=logging.INFO)
-formatter = logging.Formatter(
-    "%(asctime)s %(levelname)s [%(name)s] [%(filename)s:%(lineno)d] [trace_id=%(otelTraceID)s"
-    " span_id=%(otelSpanID)s resource.service.name=%(otelServiceName)s] - %(message)s"
-)
-console_handler = logging.StreamHandler()
-console_handler.setFormatter(formatter)
-logger.addHandler(console_handler)
-logger.addFilter(EndpointFilter())
-logger.propagate = False
-
+logger = Logger("generic_qa")
 
 api_description = """
 Jugalbandi.ai has a vector datastore that allows you to get factual Q&A over
@@ -151,14 +133,14 @@ async def root():
 async def chain(response: Response):
     headers = {}
     inject(headers)  # inject trace info to header
-    logger.critical(headers)
+    await logger.critical(headers)
 
     async with httpx.AsyncClient() as client:
         await client.get(
             "http://localhost:8080/",
             headers=headers,
         )
-    logger.info("Chain Finished")
+    await logger.info("Chain Finished")
     return {"path": "/chain"}
 
 
@@ -186,18 +168,18 @@ async def upload_files(
     document_collection = document_repository.new_collection()
     uuid_number = document_collection.id
     source_files = [DocumentSourceFile(file.filename, file) for file in files]
-    logger.info("UUID number: %s", uuid_number)
+    await logger.info("UUID number: %s", uuid_number)
     for file in source_files:
-        logger.info("File name: %s", file.filename)
+        await logger.info("File name: %s", file.filename)
     await document_collection.init_from_files(source_files)
 
     async for filename in document_collection.list_files():
         await text_converter.textify(filename, document_collection)
-    logger.info("Textification is successful")
+    await logger.info("Textification is successful")
 
     langchain_indexer = LangchainIndexer()
     await langchain_indexer.index(document_collection)
-    logger.info("Langchain Indexing is successful")
+    await logger.info("Langchain Indexing is successful")
 
     return {
         "uuid_number": uuid_number,
@@ -245,8 +227,8 @@ async def get_rephrased_query(
     query_string: str,
 ):
     answer = await rephrased_question(query_string)
-    logger.info("Query: %s", query_string)
-    logger.info("Answer: %s", answer)
+    await logger.info(f"Query: {query_string}")
+    await logger.info(f"Answer: {answer}")
     return {"given_query": query_string, "rephrased_query": answer}
 
 

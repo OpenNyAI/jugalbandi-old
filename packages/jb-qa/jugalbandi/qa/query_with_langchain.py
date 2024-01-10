@@ -21,7 +21,8 @@ async def rephrased_question(user_query: str):
     Rephrased User input:"""
     )
     prompt = PromptTemplate(template=template, input_variables=["question"])
-    llm_chain = LLMChain(prompt=prompt, llm=OpenAI(temperature=0),  # type: ignore
+    llm_chain = LLMChain(prompt=prompt,
+                         llm=OpenAI(temperature=0, model="gpt-3.5-turbo-instruct"),
                          verbose=False)
     response = llm_chain.predict(question=user_query)
     return response.strip()

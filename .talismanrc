@@ -28,7 +28,7 @@ fileignoreconfig:
 - filename: jb-generic-qa/generic_qa/server_middleware.py
   checksum: 41b07b21832eab895db301e6d08059459c0cb5f5065c7acef1e6dd373cf0dc7f
 - filename: jb-generic-qa/poetry.lock
-  checksum: b5ac17951300b690f619d10136e080c88494df0c31a03ce5aa6aa4a2f4d4ff11
+  checksum: 30640f98be826bfcf139aaa897294365a5900a4189809ac93bb62f5aba206ca2
 - filename: jb-generic-qa/pyproject.toml
   checksum: 4320042c5911d04a8ae236299fbec544a0cbe045a30e28297ad4aa848363ccd1
 - filename: jb-generic-qa/tests/test_server.py
