@@ -1,56 +1,53 @@
-from .server_env import init_env
+import base64
+import os
 from typing import Annotated, List
-from fastapi import FastAPI, UploadFile, Depends, Query, File
-from fastapi.responses import JSONResponse, Response
+
+import httpx
+from auth_service import auth_app
+from fastapi import Depends, FastAPI, File, Query, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse, Response
 from fastapi.security.api_key import APIKey
-from jugalbandi.core import (
-  Language,
-  MediaFormat,
-  IncorrectInputException,
-  SpeechProcessor as SpeechProcessorEnum
-)
-from jugalbandi.translator import Translator
-from jugalbandi.speech_processor import (
-  SpeechProcessor,
-  AzureSpeechProcessor,
-  GoogleSpeechProcessor,
-  DhruvaSpeechProcessor
-)
 from jugalbandi.audio_converter import convert_to_wav_with_ffmpeg
-from jugalbandi.tenant import TenantRepository
-from jugalbandi.document_collection import (
-    DocumentRepository,
-    DocumentSourceFile,
-)
+from jugalbandi.core import IncorrectInputException, Language, MediaFormat
+from jugalbandi.core import SpeechProcessor as SpeechProcessorEnum
+from jugalbandi.document_collection import DocumentRepository, DocumentSourceFile
+from jugalbandi.feedback import FeedbackRepository
+from jugalbandi.logging import Logger, LoggingRepository
 from jugalbandi.qa import (
+    LangchainIndexer,
     QAEngine,
     QueryResponse,
-    LangchainIndexer,
     TextConverter,
     rephrased_question,
 )
-from auth_service import auth_app
-from jugalbandi.feedback import FeedbackRepository
+from jugalbandi.speech_processor import (
+    AzureSpeechProcessor,
+    DhruvaSpeechProcessor,
+    GoogleSpeechProcessor,
+    SpeechProcessor,
+)
+from jugalbandi.tenant import TenantRepository
+from jugalbandi.translator import Translator
+from opentelemetry.propagate import inject
+
 from .query_with_tfidf import querying_with_tfidf
+from .server_env import init_env
 from .server_helper import (
+    User,
     get_api_key,
-    get_tenant_repository,
+    get_document_repository,
     get_feedback_repository,
     get_langchain_qa_engine,
-    get_text_converter,
-    verify_access_token,
-    get_document_repository,
+    get_logging_repository,
     get_speech_processor,
+    get_tenant_repository,
+    get_text_converter,
     get_translator,
-    User,
+    verify_access_token,
 )
-import base64
-from jugalbandi.logging import Logger
-import os
-import httpx
-from opentelemetry.propagate import inject
-from tools.utils import PrometheusMiddleware, metrics, setting_otlp
+
+# from tools.utils import PrometheusMiddleware, metrics, setting_otlp
 
 
 init_env()
@@ -94,12 +91,12 @@ app = FastAPI(
 )
 
 
-# Setting metrics middleware
-app.add_middleware(PrometheusMiddleware, app_name=APP_NAME)
-app.add_route("/metrics", metrics)
+# # Setting metrics middleware
+# app.add_middleware(PrometheusMiddleware, app_name=APP_NAME)
+# app.add_route("/metrics", metrics)
 
-# Setting OpenTelemetry exporter
-setting_otlp(app, APP_NAME, OTLP_GRPC_ENDPOINT)
+# # Setting OpenTelemetry exporter
+# setting_otlp(app, APP_NAME, OTLP_GRPC_ENDPOINT)
 
 
 app.add_middleware(
@@ -113,14 +110,13 @@ app.add_middleware(
 
 @app.exception_handler(Exception)
 async def custom_exception_handler(request, exception):
-    if hasattr(exception, 'status_code'):
+    if hasattr(exception, "status_code"):
         status_code = exception.status_code
     else:
         status_code = 500
     logger.exception(str(exception))
     return JSONResponse(
-        status_code=status_code,
-        content={"error_message": str(exception)}
+        status_code=status_code, content={"error_message": str(exception)}
     )
 
 
@@ -195,21 +191,23 @@ async def upload_files(
 async def query(
     authorization: Annotated[User, Depends(verify_access_token)],
     api_key: Annotated[APIKey, Depends(get_api_key)],
-    langchain_qa_engine: Annotated[QAEngine,
-                                   Depends(get_langchain_qa_engine)],
+    langchain_qa_engine: Annotated[QAEngine, Depends(get_langchain_qa_engine)],
     input_language: Language,
     output_format: MediaFormat,
     query_text: str = "",
     audio_url: str = "",
-    prompt: str = Query(default="",
-                        description=(
-                            "Give prompts in this format. "
-                            "The first sentence of the prompt is necessary. "
-                            "The second sentence can be customized. \n\n"
-                            "You are a helpful assistant who helps with answering "
-                            "questions based on the provided information. If the "
-                            "information cannot be found in the text provided, "
-                            "you admit that you don't know"))
+    prompt: str = Query(
+        default="",
+        description=(
+            "Give prompts in this format. "
+            "The first sentence of the prompt is necessary. "
+            "The second sentence can be customized. \n\n"
+            "You are a helpful assistant who helps with answering "
+            "questions based on the provided information. If the "
+            "information cannot be found in the text provided, "
+            "you admit that you don't know"
+        ),
+    ),
 ) -> QueryResponse:
     return await langchain_qa_engine.query(
         query=query_text,
@@ -297,7 +295,7 @@ async def get_speech_to_text(
     authorization: Annotated[User, Depends(verify_access_token)],
     speech_query_url: str,
     language: Language,
-    speech_processor_enum: SpeechProcessorEnum
+    speech_processor_enum: SpeechProcessorEnum,
 ):
     if speech_processor_enum.value == "Azure":
         speech_processor = AzureSpeechProcessor()
@@ -321,7 +319,7 @@ async def get_text_to_speech(
     authorization: Annotated[User, Depends(verify_access_token)],
     text_query: str,
     language: Language,
-    speech_processor_enum: SpeechProcessorEnum
+    speech_processor_enum: SpeechProcessorEnum,
 ):
     if speech_processor_enum.value == "Azure":
         speech_processor = AzureSpeechProcessor()
@@ -332,8 +330,51 @@ async def get_text_to_speech(
 
     print(text_query)
     audio_bytes = await speech_processor.text_to_speech(text_query, language)
-    audio_base64 = base64.b64encode(audio_bytes).decode('utf-8')
+    audio_base64 = base64.b64encode(audio_bytes).decode("utf-8")
     return {"audio_bytes": audio_base64}
+
+
+# Temporary data addition
+@app.post("/logging-repo")
+async def logging_repo(
+    authorization: Annotated[User, Depends(verify_access_token)],
+    logging_repository: Annotated[LoggingRepository, Depends(get_logging_repository)],
+):
+    # await logging_repository.insert_users_information("Hello", "Bye", 91234567890)
+    # await logging_repository.insert_app_information("App1", 62846563489)
+    # await logging_repository.insert_document_store_log(1, 1, "545634353434", ["Hello", "Bye"],
+    #                                                    40, 200, "Successful upload")
+    await logging_repository.insert_qa_log(
+        1,
+        1,
+        "545634353434",
+        "en",
+        "How are you",
+        "some-link",
+        "I'm fine",
+        "some-link",
+        5,
+        ["1", "2", "3", "4"],
+        "some-prompt",
+        "gpt-4",
+        200,
+        "Success",
+        10,
+    )
+    await logging_repository.insert_stt_log(
+        1, "some-link", "bhashini", "somshsdjf", 200, "success", 5
+    )
+    await logging_repository.insert_tts_log(
+        1, "some-text", "bhashini", "some-link", 200, "success", 5
+    )
+    await logging_repository.insert_translator_log(
+        1, "some-text", "hi", "en", "bhashini", "translated-text", 200, "success", 5
+    )
+    await logging_repository.insert_chat_history(
+        1, 1, "545634353434", "user", "en", "some-link", "hello", "bye"
+    )
+
+    return "Logging is successful"
 
 
 app.mount("/auth", auth_app)

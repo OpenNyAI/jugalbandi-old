@@ -35,19 +35,14 @@ class TenantRepository:
                     name TEXT,
                     email_id TEXT,
                     api_key TEXT PRIMARY KEY,
+                    password TEXT,
                     weekly_quota INTEGER DEFAULT 125,
                     balance_quota INTEGER DEFAULT 125
                 );
             """
             )
 
-    async def insert_into_tenant(
-        self,
-        name,
-        email_id,
-        api_key,
-        weekly_quota
-    ):
+    async def insert_into_tenant(self, name, email_id, api_key, weekly_quota):
         engine = await self._get_engine()
         async with engine.acquire() as connection:
             await connection.execute(
@@ -60,13 +55,10 @@ class TenantRepository:
                 email_id,
                 api_key,
                 weekly_quota,
-                weekly_quota
+                weekly_quota,
             )
 
-    async def get_balance_quota_from_api_key(
-        self,
-        api_key
-    ):
+    async def get_balance_quota_from_api_key(self, api_key):
         engine = await self._get_engine()
         async with engine.acquire() as connection:
             return await connection.fetchval(
@@ -74,14 +66,10 @@ class TenantRepository:
                 SELECT balance_quota FROM tenant
                 WHERE api_key = $1
                 """,
-                api_key
+                api_key,
             )
 
-    async def update_balance_quota(
-        self,
-        api_key,
-        balance_quota
-    ):
+    async def update_balance_quota(self, api_key, balance_quota):
         engine = await self._get_engine()
         async with engine.acquire() as connection:
             await connection.execute(
@@ -92,16 +80,10 @@ class TenantRepository:
                 """,
                 api_key,
                 balance_quota,
-                balance_quota - 1
+                balance_quota - 1,
             )
 
-    async def update_tenant_information(
-        self,
-        name,
-        email_id,
-        api_key,
-        weekly_quota
-    ):
+    async def update_tenant_information(self, name, email_id, api_key, weekly_quota):
         engine = await self._get_engine()
         async with engine.acquire() as connection:
             await connection.execute(
@@ -113,13 +95,10 @@ class TenantRepository:
                 name,
                 email_id,
                 api_key,
-                weekly_quota
+                weekly_quota,
             )
 
-    async def reset_balance_quota_for_tenant(
-        self,
-        api_key
-    ):
+    async def reset_balance_quota_for_tenant(self, api_key):
         engine = await self._get_engine()
         async with engine.acquire() as connection:
             await connection.execute(
@@ -128,5 +107,5 @@ class TenantRepository:
                 SET balance_quota = weekly_quota
                 WHERE api_key = $1
                 """,
-                api_key
+                api_key,
             )

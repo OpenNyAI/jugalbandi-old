@@ -20,6 +20,7 @@ from jugalbandi.qa import (
     TextConverter,
     LangchainQAModel,
 )
+from jugalbandi.logging import LoggingRepository
 from jugalbandi.speech_processor import (
     CompositeSpeechProcessor,
     DhruvaSpeechProcessor,
@@ -115,6 +116,11 @@ async def get_langchain_qa_engine(
 @aiocached(cache={})
 async def get_feedback_repository() -> FeedbackRepository:
     return QAFeedbackRepository()
+
+
+@aiocached(cache={})
+async def get_logging_repository() -> LoggingRepository:
+    return LoggingRepository()
 
 
 @aiocached(cache={})

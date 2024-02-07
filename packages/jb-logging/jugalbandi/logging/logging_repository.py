@@ -7,7 +7,7 @@ from jugalbandi.core.caching import aiocachedmethod
 from .logging_settings import get_logging_settings
 
 
-class LoggingRepository():
+class LoggingRepository:
     def __init__(self) -> None:
         self.engine_cache: Dict[str, asyncpg.Pool] = {}
         self.logging_settings = get_logging_settings()
@@ -59,7 +59,7 @@ class LoggingRepository():
                     FOREIGN key (app_id) REFERENCES jb_app(id)
                 );
                 CREATE TABLE IF NOT EXISTS jb_qa_log(
-                    id SERIAL PRIMARY KEY,
+                    id TEXT PRIMARY KEY,
                     user_id INTEGER,
                     app_id INTEGER,
                     document_uuid TEXT,
@@ -83,7 +83,7 @@ class LoggingRepository():
                 CREATE TABLE IF NOT EXISTS jb_stt_log(
                     id SERIAL PRIMARY KEY,
                     qa_log_id INTEGER,
-                    audio_input_link TEXT,
+                    audio_input_bytes TEXT,
                     model_name TEXT,
                     text TEXT,
                     status_code INTEGER,
@@ -97,7 +97,7 @@ class LoggingRepository():
                     qa_log_id INTEGER,
                     text TEXT,
                     model_name TEXT,
-                    audio_output_link TEXT,
+                    audio_output_bytes TEXT,
                     status_code INTEGER,
                     status_message TEXT,
                     response_time INTEGER,
@@ -150,9 +150,9 @@ class LoggingRepository():
             """
             )
 
-    async def insert_users_information(self, first_name: str,
-                                       last_name: str,
-                                       phone_number: int):
+    async def insert_users_information(
+        self, first_name: str, last_name: str, phone_number: int
+    ):
         engine = await self._get_engine()
         async with engine.acquire() as connection:
             await connection.execute(
@@ -167,8 +167,7 @@ class LoggingRepository():
                 datetime.now(pytz.UTC),
             )
 
-    async def insert_app_information(self, name: str,
-                                     phone_number: int):
+    async def insert_app_information(self, name: str, phone_number: int):
         engine = await self._get_engine()
         async with engine.acquire() as connection:
             await connection.execute(
@@ -182,9 +181,16 @@ class LoggingRepository():
                 datetime.now(pytz.UTC),
             )
 
-    async def insert_document_store_log(self, user_id: int, app_id: int, uuid: str,
-                                        documents_list: list, total_file_size: int,
-                                        status_code: int, status_message: str):
+    async def insert_document_store_log(
+        self,
+        user_id: int,
+        app_id: int,
+        uuid: str,
+        documents_list: list,
+        total_file_size: int,
+        status_code: int,
+        status_message: str,
+    ):
         engine = await self._get_engine()
         async with engine.acquire() as connection:
             await connection.execute(
@@ -204,22 +210,38 @@ class LoggingRepository():
                 datetime.now(pytz.UTC),
             )
 
-    async def insert_qa_log(self, user_id: int, app_id: int, document_uuid: str, input_language: str,
-                            query: str, audio_input_link: str, response: str, audio_output_link: str,
-                            retrieval_k_value: int, retrieved_chunks: list, prompt: str, gpt_model_name: str,
-                            status_code: int, status_message: str, response_time: int):
+    async def insert_qa_log(
+        self,
+        id: str,
+        user_id: int,
+        app_id: int,
+        document_uuid: str,
+        input_language: str,
+        query: str,
+        audio_input_link: str,
+        response: str,
+        audio_output_link: str,
+        retrieval_k_value: int,
+        retrieved_chunks: list,
+        prompt: str,
+        gpt_model_name: str,
+        status_code: int,
+        status_message: str,
+        response_time: int,
+    ):
         engine = await self._get_engine()
         async with engine.acquire() as connection:
             await connection.execute(
                 """
                 INSERT INTO jb_qa_log
-                (user_id, app_id, document_uuid, input_language,
+                (id, user_id, app_id, document_uuid, input_language,
                 query, audio_input_link, response, audio_output_link,
                 retrieval_k_value, retrieved_chunks, prompt, gpt_model_name,
                 status_code, status_message, response_time, created_at)
                 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11,
                 $12, $13, $14, $15, $16)
                 """,
+                id,
                 user_id,
                 app_id,
                 document_uuid,
@@ -238,21 +260,28 @@ class LoggingRepository():
                 datetime.now(pytz.UTC),
             )
 
-    async def insert_stt_log(self, qa_log_id: int, audio_input_link: str,
-                             model_name: str, text: str, status_code: int,
-                             status_message: str, response_time: int):
+    async def insert_stt_log(
+        self,
+        qa_log_id: int,
+        audio_input_bytes: str,
+        model_name: str,
+        text: str,
+        status_code: int,
+        status_message: str,
+        response_time: int,
+    ):
         engine = await self._get_engine()
         async with engine.acquire() as connection:
             await connection.execute(
                 """
                 INSERT INTO jb_stt_log
-                (qa_log_id, audio_input_link, model_name,
+                (qa_log_id, audio_input_bytes, model_name,
                 text, status_code, status_message,
                 response_time, created_at)
                 VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
                 """,
                 qa_log_id,
-                audio_input_link,
+                audio_input_bytes,
                 model_name,
                 text,
                 status_code,
@@ -261,32 +290,48 @@ class LoggingRepository():
                 datetime.now(pytz.UTC),
             )
 
-    async def insert_tts_log(self, qa_log_id: int, text: str,
-                             model_name: str, audio_output_link: str, status_code: int,
-                             status_message: str, response_time: int):
+    async def insert_tts_log(
+        self,
+        qa_log_id: int,
+        text: str,
+        model_name: str,
+        audio_output_bytes: str,
+        status_code: int,
+        status_message: str,
+        response_time: int,
+    ):
         engine = await self._get_engine()
         async with engine.acquire() as connection:
             await connection.execute(
                 """
                 INSERT INTO jb_tts_log
                 (qa_log_id, text, model_name,
-                audio_output_link, status_code, status_message,
+                audio_output_bytes, status_code, status_message,
                 response_time, created_at)
                 VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
                 """,
                 qa_log_id,
                 text,
                 model_name,
-                audio_output_link,
+                audio_output_bytes,
                 status_code,
                 status_message,
                 response_time,
                 datetime.now(pytz.UTC),
             )
 
-    async def insert_translator_log(self, qa_log_id: int, text: str, input_language: str,
-                                    output_language: str, model_name: str, translated_text: str,
-                                    status_code: int, status_message: str, response_time: int):
+    async def insert_translator_log(
+        self,
+        qa_log_id: int,
+        text: str,
+        input_language: str,
+        output_language: str,
+        model_name: str,
+        translated_text: str,
+        status_code: int,
+        status_message: str,
+        response_time: int,
+    ):
         engine = await self._get_engine()
         async with engine.acquire() as connection:
             await connection.execute(
@@ -309,9 +354,17 @@ class LoggingRepository():
                 datetime.now(pytz.UTC),
             )
 
-    async def insert_chat_history(self, user_id: int, app_id: int, document_uuid: str,
-                                  message_owner: str, preferred_language: str, audio_url: str,
-                                  message: str, message_in_english: str):
+    async def insert_chat_history(
+        self,
+        user_id: int,
+        app_id: int,
+        document_uuid: str,
+        message_owner: str,
+        preferred_language: str,
+        audio_url: str,
+        message: str,
+        message_in_english: str,
+    ):
         engine = await self._get_engine()
         async with engine.acquire() as connection:
             await connection.execute(

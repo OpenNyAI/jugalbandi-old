@@ -24,14 +24,17 @@ class Indexer(ABC):
 class GPTIndexer(Indexer):
     async def index(self, document_collection: DocumentCollection):
         try:
-            files = [document_collection.local_file_path(file)
-                     async for file in document_collection.list_files()]
+            files = [
+                document_collection.local_file_path(file)
+                async for file in document_collection.list_files()
+            ]
             documents = SimpleDirectoryReader(input_files=files).load_data()
             index = VectorStoreIndex.from_documents(documents)
             index_content = index.storage_context.to_dict()
             index_str = json.dumps(index_content)
-            await document_collection.write_index_file("gpt-index", "index.json",
-                                                       bytes(index_str, "utf-8"))
+            await document_collection.write_index_file(
+                "gpt-index", "index.json", bytes(index_str, "utf-8")
+            )
         except openai.error.RateLimitError as e:
             raise ServiceUnavailableException(
                 f"OpenAI API request exceeded rate limit: {e}"
@@ -48,7 +51,7 @@ class GPTIndexer(Indexer):
 class LangchainIndexer(Indexer):
     def __init__(self):
         self.splitter = RecursiveCharacterTextSplitter(
-            chunk_size=4 * 1024, chunk_overlap=0, separators=["\n", ".", ""]
+            chunk_size=4 * 1024, chunk_overlap=0, separators=["\n\n", "\n", ".", ""]
         )
 
     async def index(self, doc_collection: DocumentCollection):
@@ -56,9 +59,10 @@ class LangchainIndexer(Indexer):
         counter = 0
         async for filename in doc_collection.list_files():
             content = await doc_collection.read_file(filename, DocumentFormat.TEXT)
-            public_text_url = await doc_collection.public_url(filename,
-                                                              DocumentFormat.TEXT)
-            content = content.decode('utf-8')
+            public_text_url = await doc_collection.public_url(
+                filename, DocumentFormat.TEXT
+            )
+            content = content.decode("utf-8")
             content = content.replace("\\n", "\n")
             for chunk in self.splitter.split_text(content):
                 new_metadata = {
@@ -71,8 +75,9 @@ class LangchainIndexer(Indexer):
                 )
                 counter += 1
         try:
-            search_index = FAISS.from_documents(source_chunks,
-                                                OpenAIEmbeddings(client=""))
+            search_index = FAISS.from_documents(
+                source_chunks, OpenAIEmbeddings(client="")
+            )
             await self._save_index_files(search_index, doc_collection)
         except openai.error.RateLimitError as e:
             raise ServiceUnavailableException(
@@ -95,10 +100,10 @@ class LangchainIndexer(Indexer):
 
             async with aiofiles.open(f"{temp_dir}/index.pkl", "rb") as f:
                 content = await f.read()
-                await doc_collection.write_index_file("langchain", "index.pkl",
-                                                      content)
+                await doc_collection.write_index_file("langchain", "index.pkl", content)
 
             async with aiofiles.open(f"{temp_dir}/index.faiss", "rb") as f:
                 content = await f.read()
-                await doc_collection.write_index_file("langchain", "index.faiss",
-                                                      content)
+                await doc_collection.write_index_file(
+                    "langchain", "index.faiss", content
+                )
