@@ -1,24 +1,24 @@
-import re
 import time
 from datetime import datetime, timedelta
 
 import extra_streamlit_components as stx
 import httpx
-import jwt
 import streamlit as st
+from helper import (
+    InputValidator,
+    generate_api_key,
+    get_hashed_password,
+    token_decode,
+    token_encode,
+    verify_password,
+)
+from tenant_repository import TenantRepository
 
 state = st.session_state
-st.set_page_config(layout="centered")
+st.set_page_config(page_title="Jugalbandi", page_icon="😎", layout="centered")
 cookie_manager = stx.CookieManager()
-
-
-class Validator:
-    def validate_input_for_length(self, input: str) -> bool:
-        return 1 < len(input) < 100
-
-    def validate_email(self, email: str) -> bool:
-        pattern = r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,7}\b"
-        return "@" in email and 2 < len(email) < 320 and bool(re.match(pattern, email))
+validator = InputValidator()
+tenant_repository = TenantRepository()
 
 
 def init_state():
@@ -34,6 +34,8 @@ def init_state():
         state["uuid_number"] = ""
     if "name" not in state:
         state["name"] = ""
+    if "reg_email" not in state:
+        state["reg_email"] = ""
     if "reg_password" not in state:
         state["reg_password"] = ""
     if "confirm_password" not in state:
@@ -48,25 +50,10 @@ def init_state():
         state["signup_button_type"] = "secondary"
 
 
-def _token_encode(expiry_date, email) -> str:
-    return jwt.encode(
-        {"email": email, "exp_date": expiry_date},
-        "some_signature_key",
-        algorithm="HS256",
-    )
-
-
-def _token_decode(token) -> str:
-    try:
-        return jwt.decode(token, "some_signature_key", algorithms=["HS256"])
-    except Exception:
-        return False
-
-
 def _check_cookie():
     token = cookie_manager.get("Some cookie name")
     if token is not None:
-        token = _token_decode(token)
+        token = token_decode(token)
         if token is not False:
             print("INSIDE TOKEN")
             print(token)
@@ -88,7 +75,7 @@ def _set_login_cb(email, password):
     if login(email, password):
         expiry_date_time = datetime.now() + timedelta(days=30.0)
         expiry_date = expiry_date_time.timestamp()
-        token = _token_encode(expiry_date, email)
+        token = token_encode(expiry_date, email)
         cookie_manager.set(
             "Some cookie name",
             token,
@@ -98,14 +85,20 @@ def _set_login_cb(email, password):
         state["logout"] = False
 
 
-# Function to check login credentials
 def login(email, password):
     print("INSIDE LOGIN")
-    print("EMAIL", email)
-    print("PASSWORD", password)
-    return (email == "a@gmail.com" and password == "b") or (
-        email == "a" and password == "b"
-    )
+    try:
+        if not validator.validate_input_for_length(email):
+            raise Exception("Email should not be empty")
+        if not validator.validate_input_for_length(password):
+            raise Exception("Password should not be empty")
+        tenant_detail = tenant_repository.get_tenant_details(email)
+        if tenant_detail is None:
+            raise Exception("Invalid login credentials")
+        else:
+            return verify_password(password, tenant_detail[-1])
+    except Exception as e:
+        st.error(e, icon="🚨")
 
 
 def logout():
@@ -135,7 +128,7 @@ def is_signup_option():
     state["login_button_type"] = "secondary"
 
 
-def _set_signup_cb(validator, name, email, reg_password, confirm_password):
+def _set_signup_cb(name, email, reg_password, confirm_password):
     try:
         if not validator.validate_input_for_length(name):
             raise Exception("Name should not be empty")
@@ -143,20 +136,32 @@ def _set_signup_cb(validator, name, email, reg_password, confirm_password):
             raise Exception("Email should not be empty")
         if not validator.validate_email(email):
             raise Exception("Email is not valid")
-        # if _credentials_contains_value(email):
-        #     raise Exception("Email already taken")
+        registered_emails = tenant_repository.get_all_tenant_emails()
+        if email in registered_emails:
+            raise Exception("Email is already registered")
         if not validator.validate_input_for_length(
             reg_password
         ) or not validator.validate_input_for_length(confirm_password):
             raise Exception("Password/confirm password fields cannot be empty")
         if reg_password != confirm_password:
             raise Exception("Passwords do not match")
+        print("Inside Signup")
+        with st.spinner("Registration in progress...."):
+            tenant_repository.insert_into_tenant(
+                name=name,
+                email_id=email,
+                api_key=generate_api_key(),
+                password=get_hashed_password(password=reg_password),
+            )
+        print("Insertion complete")
+        st.toast("Registration successful", icon="✅")
+        time.sleep(1)
+        is_login_option()
     except Exception as e:
         st.error(e, icon="🚨")
 
 
 def main():
-    validator = Validator()
     init_state()
     st.title("Jugalbandi :sunglasses:")
     if not state["authentication_status"]:
@@ -207,10 +212,10 @@ def main():
                 )
                 st.text_input(
                     "Email:",
-                    value=state.email,
+                    value=state.reg_email,
                     key="reg_email_input",
                     on_change=_set_state_cb,
-                    kwargs={"email": "reg_email_input"},
+                    kwargs={"reg_email": "reg_email_input"},
                 )
                 st.text_input(
                     "Password:",
@@ -235,9 +240,8 @@ def main():
                         key="signup_submit",
                         on_click=_set_signup_cb,
                         args=(
-                            validator,
                             state.name,
-                            state.email,
+                            state.reg_email,
                             state.reg_password,
                             state.confirm_password,
                         ),
@@ -257,7 +261,6 @@ def main():
             response = response.json()
             state["uuid_number"] = response["uuid_number"]
             st.header(f"Your UUID number is {state['uuid_number']}")
-        print("Login successful from the other side")
         _, column_two, _ = st.columns(3)
         with column_two:
             st.button(label="Logout", on_click=logout)

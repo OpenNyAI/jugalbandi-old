@@ -1,5 +1,7 @@
 from typing import Annotated
+
 from cachetools import cached
+from dotenv import load_dotenv
 from pydantic import BaseSettings, Field
 
 
@@ -13,4 +15,5 @@ class TenantDBSettings(BaseSettings):
 
 @cached(cache={})
 def get_tenant_db_settings():
+    load_dotenv()
     return TenantDBSettings()
