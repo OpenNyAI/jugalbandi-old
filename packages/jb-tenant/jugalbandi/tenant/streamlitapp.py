@@ -1,3 +1,5 @@
+import re
+import time
 from datetime import datetime, timedelta
 
 import extra_streamlit_components as stx
@@ -10,11 +12,20 @@ st.set_page_config(layout="centered")
 cookie_manager = stx.CookieManager()
 
 
+class Validator:
+    def validate_input_for_length(self, input: str) -> bool:
+        return 1 < len(input) < 100
+
+    def validate_email(self, email: str) -> bool:
+        pattern = r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,7}\b"
+        return "@" in email and 2 < len(email) < 320 and bool(re.match(pattern, email))
+
+
 def init_state():
     if "email" not in state:
-        state["email"] = None
+        state["email"] = ""
     if "password" not in state:
-        state["password"] = None
+        state["password"] = ""
     if "authentication_status" not in state:
         state["authentication_status"] = None
     if "logout" not in state:
@@ -64,7 +75,6 @@ def _check_cookie():
                     if "email" in token:
                         state["email"] = token["email"]
                         state["authentication_status"] = True
-                        print(state)
 
 
 def _set_state_cb(**kwargs):
@@ -125,11 +135,28 @@ def is_signup_option():
     state["login_button_type"] = "secondary"
 
 
-def _set_signup_cb(name, email, reg_password, confirm_password):
-    pass
+def _set_signup_cb(validator, name, email, reg_password, confirm_password):
+    try:
+        if not validator.validate_input_for_length(name):
+            raise Exception("Name should not be empty")
+        if not validator.validate_input_for_length(email):
+            raise Exception("Email should not be empty")
+        if not validator.validate_email(email):
+            raise Exception("Email is not valid")
+        # if _credentials_contains_value(email):
+        #     raise Exception("Email already taken")
+        if not validator.validate_input_for_length(
+            reg_password
+        ) or not validator.validate_input_for_length(confirm_password):
+            raise Exception("Password/confirm password fields cannot be empty")
+        if reg_password != confirm_password:
+            raise Exception("Passwords do not match")
+    except Exception as e:
+        st.error(e, icon="🚨")
 
 
 def main():
+    validator = Validator()
     init_state()
     st.title("Jugalbandi :sunglasses:")
     if not state["authentication_status"]:
@@ -208,6 +235,7 @@ def main():
                         key="signup_submit",
                         on_click=_set_signup_cb,
                         args=(
+                            validator,
                             state.name,
                             state.email,
                             state.reg_password,
