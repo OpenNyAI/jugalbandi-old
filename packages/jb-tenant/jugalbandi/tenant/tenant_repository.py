@@ -1,6 +1,23 @@
-# import asyncpg
+from typing import Annotated
+
 import psycopg2
-from tenant_db_settings import get_tenant_db_settings
+from cachetools import cached
+from dotenv import load_dotenv
+from pydantic import BaseSettings, Field
+
+
+class TenantDBSettings(BaseSettings):
+    tenant_database_ip: Annotated[str, Field(..., env="TENANT_DATABASE_IP")]
+    tenant_database_port: Annotated[str, Field(..., env="TENANT_DATABASE_PORT")]
+    tenant_database_username: Annotated[str, Field(..., env="TENANT_DATABASE_USERNAME")]
+    tenant_database_password: Annotated[str, Field(..., env="TENANT_DATABASE_PASSWORD")]
+    tenant_database_name: Annotated[str, Field(..., env="TENANT_DATABASE_NAME")]
+
+
+@cached(cache={})
+def get_tenant_db_settings():
+    load_dotenv()
+    return TenantDBSettings()
 
 
 class TenantRepository:
@@ -20,14 +37,6 @@ class TenantRepository:
             password=self.tenant_db_settings.tenant_database_password,
             database=self.tenant_db_settings.tenant_database_name,
         )
-        # engine = asyncpg.create_pool(
-        #     host=self.tenant_db_settings.tenant_database_ip,
-        #     port=self.tenant_db_settings.tenant_database_port,
-        #     user=self.tenant_db_settings.tenant_database_username,
-        #     password=self.tenant_db_settings.tenant_database_password,
-        #     database=self.tenant_db_settings.tenant_database_name,
-        #     max_inactive_connection_lifetime=timeout,
-        # )
         return engine
 
     def _create_schema(self, engine: psycopg2):

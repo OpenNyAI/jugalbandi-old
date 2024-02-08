@@ -6,6 +6,7 @@ import httpx
 import streamlit as st
 from helper import (
     InputValidator,
+    country_phone_code_mapping,
     generate_api_key,
     get_hashed_password,
     token_decode,
@@ -48,6 +49,10 @@ def init_state():
         state["signup_button_option"] = False
     if "signup_button_type" not in state:
         state["signup_button_type"] = "secondary"
+    if "selected_country_code" not in state:
+        state["selected_country_code"] = ""
+    if "phone_numbers" not in state:
+        state["phone_numbers"] = ""
 
 
 def _check_cookie():
@@ -161,6 +166,12 @@ def _set_signup_cb(name, email, reg_password, confirm_password):
         st.error(e, icon="🚨")
 
 
+def _set_country_code(selected_country):
+    print("Selected value", selected_country)
+    state["selected_country_code"] = country_phone_code_mapping[selected_country]
+    print("Selected country code", state["selected_country_code"])
+
+
 def main():
     init_state()
     st.title("Jugalbandi :sunglasses:")
@@ -256,11 +267,35 @@ def main():
         files = []
         for uploaded_file in uploaded_files:
             files.append(("files", uploaded_file))
+        # TODO: fix calling multiple times whenever state variable is updated
         if len(files) > 0:
-            response = httpx.post(url=url, files=files, timeout=60)
-            response = response.json()
-            state["uuid_number"] = response["uuid_number"]
-            st.header(f"Your UUID number is {state['uuid_number']}")
+            with st.spinner("Uploading in progress"):
+                response = httpx.post(url=url, files=files, timeout=60)
+                response = response.json()
+                state["uuid_number"] = response["uuid_number"]
+            st.markdown("***")
+            st.subheader("Your Document set UUID number:")
+            st.subheader(f"\n{state['uuid_number']}")
+            (
+                input_column_one,
+                input_column_two,
+            ) = st.columns(2)
+            with input_column_one:
+                selected_country = st.selectbox(
+                    label="Select the country",
+                    options=tuple(country_phone_code_mapping.keys()),
+                )
+                if selected_country is not None:
+                    _set_country_code(selected_country)
+            with input_column_two:
+                st.text_input(
+                    "Enter the phone numbers separated by comma",
+                    value=state.phone_numbers,
+                    key="phone_numbers_input",
+                    on_change=_set_state_cb,
+                    kwargs={"phone_numbers": "phone_numbers_input"},
+                )
+        st.markdown("***")
         _, column_two, _ = st.columns(3)
         with column_two:
             st.button(label="Logout", on_click=logout)
