@@ -164,9 +164,9 @@ async def upload_files(
     document_collection = document_repository.new_collection()
     uuid_number = document_collection.id
     source_files = [DocumentSourceFile(file.filename, file) for file in files]
-    await logger.info("UUID number: %s", uuid_number)
+    await logger.info(f"UUID number: {uuid_number}")
     for file in source_files:
-        await logger.info("File name: %s", file.filename)
+        await logger.info(f"File name: {file.filename}")
     await document_collection.init_from_files(source_files)
 
     async for filename in document_collection.list_files():
