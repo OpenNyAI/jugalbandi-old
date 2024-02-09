@@ -51,11 +51,20 @@ class TenantRepository:
                     weekly_quota INTEGER DEFAULT 125,
                     balance_quota INTEGER DEFAULT 125
                 );
+                CREATE TABLE IF NOT EXISTS tenant_document(
+                    document_uuid TEXT PRIMARY KEY,
+                    document_name TEXT NOT NULL,
+                    documents_list TEXT[],
+                    prompt TEXT NOT NULL,
+                    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+                );
                 CREATE TABLE IF NOT EXISTS tenant_bot(
                     tenant_api_key TEXT,
                     document_uuid TEXT,
-                    phone_number TEXT PRIMARY KEY,
-                    FOREIGN KEY (tenant_api_key) REFERENCES tenant (api_key)
+                    phone_number TEXT,
+                    FOREIGN KEY (tenant_api_key) REFERENCES tenant (api_key),
+                    FOREIGN KEY (document_uuid) REFERENCES tenant_document (document_uuid),
+                    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
                 )
             """
             )
