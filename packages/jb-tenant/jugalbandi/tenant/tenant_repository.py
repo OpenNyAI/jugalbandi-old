@@ -179,6 +179,30 @@ class TenantRepository:
             registered_emails = [email_record[0] for email_record in email_records]
             return registered_emails
 
+    def get_tenant_bot_details(self, api_key: str):
+        engine = self._get_engine()
+        with engine.cursor() as connection:
+            connection.execute(
+                """
+                SELECT * FROM tenant_bot
+                WHERE tenant_api_key = %s
+                """,
+                (api_key,),
+            )
+            return connection.fetchall()
+
+    def get_tenant_document_details(self, document_uuid: str):
+        engine = self._get_engine()
+        with engine.cursor() as connection:
+            connection.execute(
+                """
+                SELECT * FROM tenant_document
+                WHERE document_uuid = %s
+                """,
+                (document_uuid,),
+            )
+            return connection.fetchone()
+
     def update_balance_quota(self, api_key: str, balance_quota: str):
         engine = self._get_engine()
         with engine.cursor() as connection:

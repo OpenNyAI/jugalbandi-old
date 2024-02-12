@@ -216,7 +216,7 @@ def _submit_data_cb(files):
                 file_names = [file[1].name for file in files]
                 tenant_repository.insert_into_tenant_document(
                     state["uuid_number"],
-                    state["document_name"],
+                    state["document_name"].strip(),
                     file_names,
                     state["prompt"],
                 )
@@ -319,7 +319,11 @@ def main():
 
     if state["authentication_status"] is True:
         with st.container():
-            st.title("Upload your files")
+            column_one, column_two = st.columns(2)
+            with column_one:
+                st.title("Upload your files")
+            with column_two:
+                st.button(label="Logout", on_click=logout, type="primary")
             uploaded_files = st.file_uploader(
                 label="Files Upload", accept_multiple_files=True
             )
@@ -327,7 +331,7 @@ def main():
             for uploaded_file in uploaded_files:
                 files.append(("files", uploaded_file))
             st.text_input(
-                "Document Name:",
+                "Knowledge Base Name:",
                 value=state.document_name,
                 key="document_name_input",
                 on_change=_set_state_cb,
@@ -342,14 +346,13 @@ def main():
             )
             for row in state["rows"]:
                 create_input_components(row)
-
-            st.button(
-                label="Add more phone numbers",
-                key="add_phone_number_button",
-                on_click=add_phone_numbers,
-            )
             _, column_two, _ = st.columns(3)
             with column_two:
+                st.button(
+                    label="Add more phone numbers",
+                    key="add_phone_number_button",
+                    on_click=add_phone_numbers,
+                )
                 st.button(
                     label="Submit",
                     key="files_submit",
@@ -359,13 +362,17 @@ def main():
                 )
             if state["uuid_number"]:
                 st.toast(
-                    f"Your document {state['document_name']} has been uploaded!",
+                    f"Your knowledge base {state['document_name']} has been uploaded!",
                     icon="✅",
                 )
         st.markdown("***")
-        _, column_two, _ = st.columns(3)
-        with column_two:
-            st.button(label="Logout", on_click=logout)
+        # _, column_two, _ = st.columns(3)
+        # with column_two:
+        #     st.button(label="Logout", on_click=logout)
+
+        with st.sidebar:
+            tenant_details = tenant_repository.get_tenant_details(state["email"])
+            st.title(f"Hello {tenant_details[0]}")
 
 
 if __name__ == "__main__":
