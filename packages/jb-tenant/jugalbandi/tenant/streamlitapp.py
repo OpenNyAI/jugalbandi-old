@@ -1,4 +1,5 @@
 import time
+import uuid
 from datetime import datetime, timedelta
 
 import extra_streamlit_components as stx
@@ -49,10 +50,16 @@ def init_state():
         state["signup_button_option"] = False
     if "signup_button_type" not in state:
         state["signup_button_type"] = "secondary"
-    if "selected_country_code" not in state:
-        state["selected_country_code"] = ""
+    if "document_name" not in state:
+        state["document_name"] = ""
+    if "prompt" not in state:
+        state["prompt"] = (
+            "You are a helpful assistant who helps with answering questions based on the provided information. If the information cannot be found in the text provided, you admit that I don't know"
+        )
     if "phone_numbers" not in state:
-        state["phone_numbers"] = ""
+        state["phone_numbers"] = {}
+    if "rows" not in state:
+        state["rows"] = ["base_id"]
 
 
 def _check_cookie():
@@ -166,10 +173,62 @@ def _set_signup_cb(name, email, reg_password, confirm_password):
         st.error(e, icon="🚨")
 
 
-def _set_country_code(selected_country):
-    print("Selected value", selected_country)
-    state["selected_country_code"] = country_phone_code_mapping[selected_country]
-    print("Selected country code", state["selected_country_code"])
+def create_input_components(key):
+    row_container = st.empty()
+    row_columns = row_container.columns((2, 1))
+    with row_columns[0]:
+        selected_country = st.selectbox(
+            label="Select the country",
+            key="country_select_box" + str(key),
+            options=tuple(country_phone_code_mapping.keys()),
+        )
+    with row_columns[1]:
+        phone_number = st.text_input(
+            "Enter the phone number",
+            key="phone_number_input" + str(key),
+        )
+    state["phone_numbers"][key] = {
+        "country_phone_code": country_phone_code_mapping[selected_country],
+        "phone_number": phone_number,
+    }
+
+
+def add_phone_numbers():
+    element_id = uuid.uuid4()
+    state["rows"].append(str(element_id))
+
+
+def _submit_data_cb(files):
+    url = "http://127.0.0.1:8000/upload-files"
+    try:
+        if len(files) < 1:
+            raise Exception("Files should not be empty")
+        elif not validator.validate_input_for_length(state["document_name"]):
+            raise Exception("Document name should not be empty")
+        else:
+            for _, value in state["phone_numbers"].items():
+                if value.get("phone_number") == "":
+                    raise Exception("Phone number should not be empty")
+            with st.spinner("Uploading in progress"):
+                response = httpx.post(url=url, files=files, timeout=60)
+                response = response.json()
+                state["uuid_number"] = response["uuid_number"]
+                file_names = [file[1].name for file in files]
+                tenant_repository.insert_into_tenant_document(
+                    state["uuid_number"],
+                    state["document_name"],
+                    file_names,
+                    state["prompt"],
+                )
+                tenant_details = tenant_repository.get_tenant_details(state["email"])
+                for _, value in state["phone_numbers"].items():
+                    tenant_repository.insert_into_tenant_bot(
+                        tenant_details[2],
+                        state["uuid_number"],
+                        value.get("country_phone_code") + value.get("phone_number"),
+                    )
+    except Exception as e:
+        st.error(e, icon="🚨")
 
 
 def main():
@@ -259,41 +318,49 @@ def main():
                     )
 
     if state["authentication_status"] is True:
-        st.title("Upload your files")
-        uploaded_files = st.file_uploader(
-            label="Files Upload", accept_multiple_files=True
-        )
-        url = "http://127.0.0.1:8000/upload-files"
-        files = []
-        for uploaded_file in uploaded_files:
-            files.append(("files", uploaded_file))
-        # TODO: fix calling multiple times whenever state variable is updated
-        if len(files) > 0:
-            with st.spinner("Uploading in progress"):
-                response = httpx.post(url=url, files=files, timeout=60)
-                response = response.json()
-                state["uuid_number"] = response["uuid_number"]
-            st.markdown("***")
-            st.subheader("Your Document set UUID number:")
-            st.subheader(f"\n{state['uuid_number']}")
-            (
-                input_column_one,
-                input_column_two,
-            ) = st.columns(2)
-            with input_column_one:
-                selected_country = st.selectbox(
-                    label="Select the country",
-                    options=tuple(country_phone_code_mapping.keys()),
+        with st.container():
+            st.title("Upload your files")
+            uploaded_files = st.file_uploader(
+                label="Files Upload", accept_multiple_files=True
+            )
+            files = []
+            for uploaded_file in uploaded_files:
+                files.append(("files", uploaded_file))
+            st.text_input(
+                "Document Name:",
+                value=state.document_name,
+                key="document_name_input",
+                on_change=_set_state_cb,
+                kwargs={"document_name": "document_name_input"},
+            )
+            st.text_input(
+                "Custom Prompt:",
+                value=state.prompt,
+                key="prompt_input",
+                on_change=_set_state_cb,
+                kwargs={"prompt": "prompt_input"},
+            )
+            for row in state["rows"]:
+                create_input_components(row)
+
+            st.button(
+                label="Add more phone numbers",
+                key="add_phone_number_button",
+                on_click=add_phone_numbers,
+            )
+            _, column_two, _ = st.columns(3)
+            with column_two:
+                st.button(
+                    label="Submit",
+                    key="files_submit",
+                    on_click=_submit_data_cb,
+                    type="primary",
+                    kwargs={"files": files},
                 )
-                if selected_country is not None:
-                    _set_country_code(selected_country)
-            with input_column_two:
-                st.text_input(
-                    "Enter the phone numbers separated by comma",
-                    value=state.phone_numbers,
-                    key="phone_numbers_input",
-                    on_change=_set_state_cb,
-                    kwargs={"phone_numbers": "phone_numbers_input"},
+            if state["uuid_number"]:
+                st.toast(
+                    f"Your document {state['document_name']} has been uploaded!",
+                    icon="✅",
                 )
         st.markdown("***")
         _, column_two, _ = st.columns(3)

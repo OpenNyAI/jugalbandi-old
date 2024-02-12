@@ -1,6 +1,8 @@
+from datetime import datetime
 from typing import Annotated
 
 import psycopg2
+import pytz
 from cachetools import cached
 from dotenv import load_dotenv
 from pydantic import BaseSettings, Field
@@ -92,6 +94,51 @@ class TenantRepository:
                     password,
                     weekly_quota,
                     weekly_quota,
+                ),
+            )
+            engine.commit()
+
+    def insert_into_tenant_document(
+        self,
+        document_uuid: str,
+        document_name: str,
+        documents_list: list,
+        prompt: str,
+    ):
+        engine = self._get_engine()
+        with engine.cursor() as connection:
+            connection.execute(
+                """
+                INSERT INTO tenant_document
+                (document_uuid, document_name, documents_list, prompt, created_at)
+                VALUES (%s, %s, %s, %s, %s)
+                """,
+                (
+                    document_uuid,
+                    document_name,
+                    documents_list,
+                    prompt,
+                    datetime.now(pytz.UTC),
+                ),
+            )
+            engine.commit()
+
+    def insert_into_tenant_bot(
+        self, tenant_api_key: str, document_uuid: str, phone_number: str
+    ):
+        engine = self._get_engine()
+        with engine.cursor() as connection:
+            connection.execute(
+                """
+                INSERT INTO tenant_bot
+                (tenant_api_key, document_uuid, phone_number, created_at)
+                VALUES (%s, %s, %s, %s)
+                """,
+                (
+                    tenant_api_key,
+                    document_uuid,
+                    phone_number,
+                    datetime.now(pytz.UTC),
                 ),
             )
             engine.commit()
