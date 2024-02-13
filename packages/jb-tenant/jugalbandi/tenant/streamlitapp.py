@@ -14,6 +14,7 @@ from helper import (
     token_encode,
     verify_password,
 )
+from streamlit_modal import Modal
 from tenant_repository import TenantRepository
 
 state = st.session_state
@@ -21,6 +22,15 @@ st.set_page_config(page_title="Jugalbandi", page_icon="😎", layout="centered")
 cookie_manager = stx.CookieManager()
 validator = InputValidator()
 tenant_repository = TenantRepository()
+
+
+modal = Modal(
+    "Demo Modal",
+    key="demo-modal",
+    # Optional
+    padding=20,  # default value
+    max_width=744,  # default value
+)
 
 
 def init_state():
@@ -199,12 +209,16 @@ def add_phone_numbers():
 
 
 def _submit_data_cb(files):
-    url = "http://127.0.0.1:8000/upload-files"
+    url = "https://api.jugalbandi.ai/upload-files"
     try:
         if len(files) < 1:
             raise Exception("Files should not be empty")
-        elif not validator.validate_input_for_length(state["document_name"]):
-            raise Exception("Document name should not be empty")
+        elif not validator.validate_document_set_name(
+            document_set_name=state["document_name"]
+        ):
+            raise Exception(
+                "Document name should not contain emojis and should be between 1 & 15 characters"
+            )
         else:
             for _, value in state["phone_numbers"].items():
                 if value.get("phone_number") == "":
@@ -227,6 +241,7 @@ def _submit_data_cb(files):
                         state["uuid_number"],
                         value.get("country_phone_code") + value.get("phone_number"),
                     )
+                modal.open()
     except Exception as e:
         st.error(e, icon="🚨")
 
@@ -319,11 +334,7 @@ def main():
 
     if state["authentication_status"] is True:
         with st.container():
-            column_one, column_two = st.columns(2)
-            with column_one:
-                st.title("Upload your files")
-            with column_two:
-                st.button(label="Logout", on_click=logout, type="primary")
+            st.title("Upload your files")
             uploaded_files = st.file_uploader(
                 label="Files Upload", accept_multiple_files=True
             )
@@ -365,12 +376,20 @@ def main():
                     f"Your knowledge base {state['document_name']} has been uploaded!",
                     icon="✅",
                 )
-        st.markdown("***")
-        # _, column_two, _ = st.columns(3)
-        # with column_two:
-        #     st.button(label="Logout", on_click=logout)
 
+        if modal.is_open():
+            with modal.container():
+                _, column_two, _ = st.columns(3)
+                with column_two:
+                    st.image(
+                        "jb_wa_qr.jpeg",
+                        width=250,
+                        caption="Scan this QR code to talk to your document over Whatsapp",
+                    )
+
+        st.markdown("***")
         with st.sidebar:
+            st.button(label="Logout", on_click=logout, type="primary")
             tenant_details = tenant_repository.get_tenant_details(state["email"])
             st.title(f"Hello {tenant_details[0]}")
 

@@ -281,6 +281,12 @@ class InputValidator:
         pattern = r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,7}\b"
         return "@" in email and 2 < len(email) < 320 and bool(re.match(pattern, email))
 
+    def validate_document_set_name(self, document_set_name: str) -> bool:
+        pattern = r"^[a-zA-Z0-9\s]+$"
+        return 1 < len(document_set_name) <= 15 and bool(
+            re.match(pattern, document_set_name)
+        )
+
 
 def get_hashed_password(password: str) -> str:
     return password_context.hash(password)

@@ -8,7 +8,6 @@ packages = [{include = "jugalbandi/tenant"}]
 
 [tool.poetry.dependencies]
 python = ">=3.10, <4.0.0"
-jb-core = {path = "../jb-core", develop = true}
 asyncpg = "0.28.0"
 pytz = "^2023.3"
 pydantic = "1.10.13"
@@ -18,6 +17,7 @@ httpx = "^0.26.0"
 passlib = "^1.7.4"
 psycopg2-binary = "^2.9.9"
 bcrypt = "^3.2.2"
+streamlit-modal = "^0.1.2"
 
 [tool.poetry.group.dev.dependencies]
 black = "^23.3.0"
@@ -31,3 +31,10 @@ Faker = "^18.10.1"
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
+
+
+[tool.poe.tasks.build]
+shell = """
+docker build --platform=linux/amd64  -f Dockerfile -t gcr.io/indian-legal-bert/jugalbandi_tenant_streamlit_ui:latest ..
+"""
+help = "build docker container"
