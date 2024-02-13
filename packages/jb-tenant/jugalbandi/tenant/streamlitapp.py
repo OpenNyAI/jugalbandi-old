@@ -16,9 +16,37 @@ from helper import (
 )
 from streamlit_modal import Modal
 from tenant_repository import TenantRepository
+import re
+
+# from PIL import Image
+
+
+def add_logo():
+    st.markdown(
+        """
+        <style>
+            [data-testid="stSidebarNav"] {
+                background-image: url(./media/jb_logo.png);
+                background-repeat: no-repeat;
+                padding-top: 120px;
+                background-position: 20px 20px;
+            }
+        </style>
+        """,
+        unsafe_allow_html=True,
+    )
+
+
+# def add_logo(logo_path, width, height):
+#     """Read and return a resized logo"""
+#     logo = Image.open(logo_path)
+#     modified_logo = logo.resize((width, height))
+#     return modified_logo
+
 
 state = st.session_state
 st.set_page_config(page_title="Jugalbandi", page_icon="😎", layout="centered")
+# add_logo()
 cookie_manager = stx.CookieManager()
 validator = InputValidator()
 tenant_repository = TenantRepository()
@@ -136,6 +164,29 @@ def logout():
     state["authentication_status"] = None
 
 
+# Inject custom CSS to move the logout button to the top-right corner
+st.markdown(
+    """
+    <style>
+    #logout-button-container {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True,
+)
+# Add a container for the logout button and apply custom CSS
+st.markdown('<div id="logout-button-container">', unsafe_allow_html=True)
+
+# Add the logout button
+st.button(label="Logout", on_click=logout, type="primary")
+
+# Close the container
+st.markdown("</div>", unsafe_allow_html=True)
+
+
 def is_login_option():
     state["login_button_option"] = True
     state["signup_button_option"] = False
@@ -183,20 +234,55 @@ def _set_signup_cb(name, email, reg_password, confirm_password):
         st.error(e, icon="🚨")
 
 
+def validate_phone_number(phone_number):
+    # Define a regular expression for a simple phone number pattern
+    pattern = re.compile(
+        r"^\d{10}$"
+    )  # Assuming a 10-digit phone number without any special characters
+
+    # Check if the entered phone number matches the pattern
+    if pattern.match(phone_number):
+        return True
+    else:
+        return False
+
+
+def _remove_phone_number(key):
+    print("state", state["phone_numbers"])
+    del state["phone_numbers"][key]
+    print("state", state["phone_numbers"])
+
+
 def create_input_components(key):
     row_container = st.empty()
-    row_columns = row_container.columns((2, 1))
+    row_columns = row_container.columns((2, 2))
     with row_columns[0]:
+        default_value = "India"
+        country_list = list(country_phone_code_mapping.keys())
         selected_country = st.selectbox(
             label="Select the country",
             key="country_select_box" + str(key),
             options=tuple(country_phone_code_mapping.keys()),
+            index=country_list.index(default_value),
         )
+
     with row_columns[1]:
         phone_number = st.text_input(
             "Enter the phone number",
             key="phone_number_input" + str(key),
         )
+        st.button(
+            label="Remove",
+            key="rm_phone_number_input" + str(key),
+            on_click=_remove_phone_number,
+            args=(key,),
+            type="primary",
+        )
+        if phone_number and not validate_phone_number(phone_number):
+            st.error(
+                "Invalid phone number. Please enter a valid number without spaces or special characters."
+            )
+
     state["phone_numbers"][key] = {
         "country_phone_code": country_phone_code_mapping[selected_country],
         "phone_number": phone_number,
@@ -334,7 +420,7 @@ def main():
 
     if state["authentication_status"] is True:
         with st.container():
-            st.title("Upload your files")
+            st.title("Upload Data")
             uploaded_files = st.file_uploader(
                 label="Files Upload", accept_multiple_files=True
             )
@@ -348,19 +434,39 @@ def main():
                 on_change=_set_state_cb,
                 kwargs={"document_name": "document_name_input"},
             )
-            st.text_input(
+            st.text_area(
                 "Custom Prompt:",
                 value=state.prompt,
                 key="prompt_input",
                 on_change=_set_state_cb,
                 kwargs={"prompt": "prompt_input"},
             )
-            for row in state["rows"]:
+
+            st.markdown("---")
+            st.title("User Assignment")
+
+            # Inject custom CSS to move the button to the left
+            st.markdown(
+                """
+                <style>
+                .add_phone_number_button {
+                    text-align: left;
+                }
+                </style>
+                """,
+                unsafe_allow_html=True,
+            )
+
+            # Add a container for the button and apply custom CSS
+            # st.markdown('<div class="add-user">', unsafe_allow_html=True)
+
+            for i, row in enumerate(state["rows"]):
+                st.markdown(f"User {i+1}")
                 create_input_components(row)
             _, column_two, _ = st.columns(3)
             with column_two:
                 st.button(
-                    label="Add more phone numbers",
+                    label="Add User",
                     key="add_phone_number_button",
                     on_click=add_phone_numbers,
                 )
