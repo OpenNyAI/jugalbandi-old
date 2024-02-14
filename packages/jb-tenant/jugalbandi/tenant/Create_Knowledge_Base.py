@@ -21,20 +21,20 @@ import re
 # from PIL import Image
 
 
-def add_logo():
-    st.markdown(
-        """
-        <style>
-            [data-testid="stSidebarNav"] {
-                background-image: url(./media/jb_logo.png);
-                background-repeat: no-repeat;
-                padding-top: 120px;
-                background-position: 20px 20px;
-            }
-        </style>
-        """,
-        unsafe_allow_html=True,
-    )
+# def add_logo():
+#     st.markdown(
+#         """
+#         <style>
+#             [data-testid="stSidebarNav"] {
+#                 background: url('jb_logo.png');
+#                 background-repeat: no-repeat;
+#                 padding-top: 120px;
+#                 background-position: 20px 20px;
+#             }
+#         </style>
+#         """,
+#         unsafe_allow_html=True,
+#     )
 
 
 # def add_logo(logo_path, width, height):
@@ -47,13 +47,14 @@ def add_logo():
 state = st.session_state
 st.set_page_config(page_title="Jugalbandi", page_icon="😎", layout="centered")
 # add_logo()
+st.image("./media/jb_logo.png")
 cookie_manager = stx.CookieManager()
 validator = InputValidator()
 tenant_repository = TenantRepository()
 
 
 modal = Modal(
-    "Demo Modal",
+    "📱 Whatsapp Assistant QR Code",
     key="demo-modal",
     # Optional
     padding=20,  # default value
@@ -164,29 +165,6 @@ def logout():
     state["authentication_status"] = None
 
 
-# Inject custom CSS to move the logout button to the top-right corner
-st.markdown(
-    """
-    <style>
-    #logout-button-container {
-        position: absolute;
-        top: 10px;
-        right: 10px;
-    }
-    </style>
-    """,
-    unsafe_allow_html=True,
-)
-# Add a container for the logout button and apply custom CSS
-st.markdown('<div id="logout-button-container">', unsafe_allow_html=True)
-
-# Add the logout button
-st.button(label="Logout", on_click=logout, type="primary")
-
-# Close the container
-st.markdown("</div>", unsafe_allow_html=True)
-
-
 def is_login_option():
     state["login_button_option"] = True
     state["signup_button_option"] = False
@@ -248,14 +226,13 @@ def validate_phone_number(phone_number):
 
 
 def _remove_phone_number(key):
-    print("state", state["phone_numbers"])
     del state["phone_numbers"][key]
-    print("state", state["phone_numbers"])
+    state["rows"].remove(key)
 
 
 def create_input_components(key):
     row_container = st.empty()
-    row_columns = row_container.columns((2, 2))
+    row_columns = row_container.columns((3, 2, 1))
     with row_columns[0]:
         default_value = "India"
         country_list = list(country_phone_code_mapping.keys())
@@ -271,12 +248,24 @@ def create_input_components(key):
             "Enter the phone number",
             key="phone_number_input" + str(key),
         )
+    with row_columns[2]:
+        st.markdown(
+            """
+            <style>
+                button[kind="secondary"] {
+                    margin-top: 0.80em;
+                }
+            </style>
+            """,
+            unsafe_allow_html=True,
+        )
+
         st.button(
             label="Remove",
             key="rm_phone_number_input" + str(key),
             on_click=_remove_phone_number,
             args=(key,),
-            type="primary",
+            type="secondary",
         )
         if phone_number and not validate_phone_number(phone_number):
             st.error(
@@ -334,7 +323,6 @@ def _submit_data_cb(files):
 
 def main():
     init_state()
-    st.title("Jugalbandi :sunglasses:")
     if not state["authentication_status"]:
         _check_cookie()
         if not state["authentication_status"]:

@@ -16,4 +16,4 @@ COPY jb-tenant/jugalbandi/tenant/ ./
 
 EXPOSE 8080
 
-CMD ["streamlit", "run", "--server.port", "8080", "streamlitapp.py"]
+CMD ["streamlit", "run", "--server.port", "8080", "Create_Knowledge_Base.py"]
