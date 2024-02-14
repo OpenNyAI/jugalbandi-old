@@ -203,7 +203,7 @@ country_phone_code_mapping = {
     "Samoa": "685",
     "San Marino": "378",
     "Sao Tome and Principe": "239",
-    "Sark": "",
+    "Sark": "44",
     "Saudi Arabia": "966",
     "Senegal": "221",
     "Serbia": "381",

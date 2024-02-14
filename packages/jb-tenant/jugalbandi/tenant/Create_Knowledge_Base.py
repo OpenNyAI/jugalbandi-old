@@ -1,6 +1,9 @@
+import json
+import re
 import time
 import uuid
 from datetime import datetime, timedelta
+from pathlib import Path
 
 import extra_streamlit_components as stx
 import httpx
@@ -14,52 +17,72 @@ from helper import (
     token_encode,
     verify_password,
 )
+from streamlit.source_util import _on_pages_changed, get_pages
 from streamlit_modal import Modal
 from tenant_repository import TenantRepository
-import re
-
-# from PIL import Image
-
-
-# def add_logo():
-#     st.markdown(
-#         """
-#         <style>
-#             [data-testid="stSidebarNav"] {
-#                 background: url('jb_logo.png');
-#                 background-repeat: no-repeat;
-#                 padding-top: 120px;
-#                 background-position: 20px 20px;
-#             }
-#         </style>
-#         """,
-#         unsafe_allow_html=True,
-#     )
-
-
-# def add_logo(logo_path, width, height):
-#     """Read and return a resized logo"""
-#     logo = Image.open(logo_path)
-#     modified_logo = logo.resize((width, height))
-#     return modified_logo
-
 
 state = st.session_state
-st.set_page_config(page_title="Jugalbandi", page_icon="😎", layout="centered")
-# add_logo()
+st.set_page_config(
+    page_title="Jugalbandi",
+    page_icon="😎",
+    layout="centered",
+)
 st.image("./media/jb_logo.png")
 cookie_manager = stx.CookieManager()
 validator = InputValidator()
 tenant_repository = TenantRepository()
+DEFAULT_PAGE = "Create_Knowledge_Base.py"
 
 
 modal = Modal(
-    "📱 Whatsapp Assistant QR Code",
+    title="📱 Whatsapp Assistant QR Code",
     key="demo-modal",
-    # Optional
     padding=20,  # default value
     max_width=744,  # default value
 )
+
+
+def get_all_pages():
+    default_pages = get_pages(DEFAULT_PAGE)
+
+    pages_path = Path("pages.json")
+
+    if pages_path.exists():
+        saved_default_pages = json.loads(pages_path.read_text())
+    else:
+        saved_default_pages = default_pages.copy()
+        pages_path.write_text(json.dumps(default_pages, indent=4))
+
+    return saved_default_pages
+
+
+def clear_all_but_first_page():
+    current_pages = get_pages(DEFAULT_PAGE)
+
+    if len(current_pages.keys()) == 1:
+        return
+
+    get_all_pages()
+
+    # Remove all but the first page
+    key, val = list(current_pages.items())[0]
+    current_pages.clear()
+    current_pages[key] = val
+
+    _on_pages_changed.send()
+
+
+def show_all_pages():
+    current_pages = get_pages(DEFAULT_PAGE)
+
+    saved_pages = get_all_pages()
+
+    # Replace all the missing pages
+    for key in saved_pages:
+        if key not in current_pages:
+            current_pages[key] = saved_pages[key]
+
+    _on_pages_changed.send()
 
 
 def init_state():
@@ -292,7 +315,7 @@ def _submit_data_cb(files):
             document_set_name=state["document_name"]
         ):
             raise Exception(
-                "Document name should not contain emojis and should be between 1 & 15 characters"
+                "Knowledge base name should not contain emojis and should be between 1 & 15 characters"
             )
         else:
             for _, value in state["phone_numbers"].items():
@@ -315,8 +338,9 @@ def _submit_data_cb(files):
                         tenant_details[2],
                         state["uuid_number"],
                         value.get("country_phone_code") + value.get("phone_number"),
+                        value.get("country_phone_code"),
                     )
-                modal.open()
+        modal.open()
     except Exception as e:
         st.error(e, icon="🚨")
 
@@ -326,6 +350,7 @@ def main():
     if not state["authentication_status"]:
         _check_cookie()
         if not state["authentication_status"]:
+            clear_all_but_first_page()
             st.subheader("Choose an action")
             login_column, signup_column = st.columns(2)
             login_column.button(
@@ -407,6 +432,7 @@ def main():
                     )
 
     if state["authentication_status"] is True:
+        show_all_pages()
         with st.container():
             st.title("Upload Data")
             uploaded_files = st.file_uploader(
@@ -465,13 +491,12 @@ def main():
                     type="primary",
                     kwargs={"files": files},
                 )
-            if state["uuid_number"]:
-                st.toast(
-                    f"Your knowledge base {state['document_name']} has been uploaded!",
-                    icon="✅",
-                )
 
         if modal.is_open():
+            st.toast(
+                f"Your knowledge base {state['document_name']} has been uploaded!",
+                icon="✅",
+            )
             with modal.container():
                 _, column_two, _ = st.columns(3)
                 with column_two:
@@ -483,9 +508,9 @@ def main():
 
         st.markdown("***")
         with st.sidebar:
-            st.button(label="Logout", on_click=logout, type="primary")
             tenant_details = tenant_repository.get_tenant_details(state["email"])
             st.title(f"Hello {tenant_details[0]}")
+            st.button(label="Logout", key="logout", on_click=logout, type="primary")
 
 
 if __name__ == "__main__":

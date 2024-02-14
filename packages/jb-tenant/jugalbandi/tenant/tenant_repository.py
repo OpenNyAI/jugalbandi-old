@@ -63,9 +63,11 @@ class TenantRepository:
                 CREATE TABLE IF NOT EXISTS tenant_bot(
                     tenant_api_key TEXT,
                     document_uuid TEXT,
+                    country_code TEXT,
                     phone_number TEXT,
                     FOREIGN KEY (tenant_api_key) REFERENCES tenant (api_key),
                     FOREIGN KEY (document_uuid) REFERENCES tenant_document (document_uuid),
+                    PRIMARY KEY (tenant_api_key, document_uuid, phone_number),
                     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
                 )
             """
@@ -124,20 +126,25 @@ class TenantRepository:
             engine.commit()
 
     def insert_into_tenant_bot(
-        self, tenant_api_key: str, document_uuid: str, phone_number: str
+        self,
+        tenant_api_key: str,
+        document_uuid: str,
+        phone_number: str,
+        country_code: str,
     ):
         engine = self._get_engine()
         with engine.cursor() as connection:
             connection.execute(
                 """
                 INSERT INTO tenant_bot
-                (tenant_api_key, document_uuid, phone_number, created_at)
-                VALUES (%s, %s, %s, %s)
+                (tenant_api_key, document_uuid, phone_number, country_code, created_at)
+                VALUES (%s, %s, %s, %s, %s)
                 """,
                 (
                     tenant_api_key,
                     document_uuid,
                     phone_number,
+                    country_code,
                     datetime.now(pytz.UTC),
                 ),
             )
@@ -202,6 +209,45 @@ class TenantRepository:
                 (document_uuid,),
             )
             return connection.fetchone()
+
+    def get_tenant_document_details_from_email_id(self, email_id: str):
+        engine = self._get_engine()
+        with engine.cursor() as connection:
+            connection.execute(
+                """
+                SELECT tb.document_uuid, tb.phone_number, td.document_name, tb.country_code FROM tenant t
+                JOIN tenant_bot tb ON t.api_key = tb.tenant_api_key
+                JOIN tenant_document td ON td.document_uuid = tb.document_uuid
+                WHERE t.email_id = %s
+                """,
+                (email_id,),
+            )
+            return connection.fetchall()
+
+    def delete_tenant_bot_details(self, document_uuid: str):
+        engine = self._get_engine()
+        with engine.cursor() as connection:
+            connection.execute(
+                """
+                DELETE from tenant_bot
+                WHERE document_uuid = %s
+                """,
+                (document_uuid,),
+            )
+            engine.commit()
+
+    def update_tenant_bot_details(
+        self, document_uuid: str, tenant_api_key: str, updated_bot_details: list
+    ):
+        self.delete_tenant_bot_details(document_uuid=document_uuid)
+        for updated_bot_detail in updated_bot_details:
+            self.insert_into_tenant_bot(
+                tenant_api_key=tenant_api_key,
+                document_uuid=document_uuid,
+                phone_number=updated_bot_detail["country_code"]
+                + updated_bot_detail["phone_number"],
+                country_code=updated_bot_detail["country_code"],
+            )
 
     def update_balance_quota(self, api_key: str, balance_quota: str):
         engine = self._get_engine()

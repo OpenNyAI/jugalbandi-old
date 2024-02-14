@@ -132,7 +132,7 @@
     "javascript.format.insertSpaceBeforeFunctionParenthesis": false, // align with ESLint Standard
     "javascript.updateImportsOnFileMove.enabled": "always",
     "[javascript]": {
-      "editor.defaultFormatter": "dbaeumer.vscode-eslint" // preconfig ESLint
+      "editor.defaultFormatter": "vscode.typescript-language-features" // preconfig ESLint
     },
 
     // typescript
