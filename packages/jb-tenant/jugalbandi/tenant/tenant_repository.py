@@ -48,16 +48,19 @@ class TenantRepository:
                 CREATE TABLE IF NOT EXISTS tenant(
                     name TEXT,
                     email_id TEXT,
+                    phone_number TEXT,
                     api_key TEXT PRIMARY KEY,
                     password TEXT,
                     weekly_quota INTEGER DEFAULT 125,
-                    balance_quota INTEGER DEFAULT 125
+                    balance_quota INTEGER DEFAULT 125,
+                    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
                 );
                 CREATE TABLE IF NOT EXISTS tenant_document(
                     document_uuid TEXT PRIMARY KEY,
                     document_name TEXT NOT NULL,
                     documents_list TEXT[],
                     prompt TEXT NOT NULL,
+                    welcome_message TEXT,
                     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
                 );
                 CREATE TABLE IF NOT EXISTS tenant_bot(
@@ -77,6 +80,7 @@ class TenantRepository:
         self,
         name: str,
         email_id: str,
+        phone_number: str,
         api_key: str,
         password: str,
         weekly_quota: int = 125,
@@ -86,16 +90,19 @@ class TenantRepository:
             connection.execute(
                 """
                 INSERT INTO tenant
-                (name, email_id, api_key, password, weekly_quota, balance_quota)
-                VALUES (%s, %s, %s, %s, %s, %s)
+                (name, email_id, phone_number, api_key, password,
+                weekly_quota, balance_quota, created_at)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
                 """,
                 (
                     name,
                     email_id,
+                    phone_number,
                     api_key,
                     password,
                     weekly_quota,
                     weekly_quota,
+                    datetime.now(pytz.UTC),
                 ),
             )
             engine.commit()
@@ -106,20 +113,23 @@ class TenantRepository:
         document_name: str,
         documents_list: list,
         prompt: str,
+        welcome_message: str,
     ):
         engine = self._get_engine()
         with engine.cursor() as connection:
             connection.execute(
                 """
                 INSERT INTO tenant_document
-                (document_uuid, document_name, documents_list, prompt, created_at)
-                VALUES (%s, %s, %s, %s, %s)
+                (document_uuid, document_name, documents_list, prompt,
+                welcome_message, created_at)
+                VALUES (%s, %s, %s, %s, %s, %s)
                 """,
                 (
                     document_uuid,
                     document_name,
                     documents_list,
                     prompt,
+                    welcome_message,
                     datetime.now(pytz.UTC),
                 ),
             )

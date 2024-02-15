@@ -53,7 +53,6 @@ def _remove_phone_number(bot, base_key):
 
 def init_state():
     if state["bot_data"] == {}:
-        print("ONCE INSIDE STATE")
         data = tenant_repository.get_tenant_document_details_from_email_id(
             state["email"]
         )
@@ -96,7 +95,6 @@ def main():
     st.title("My Knowledge Library")
     for bot in state["bot_data"]:
         data = state["bot_data"][bot]
-        print(data[0]["knowledge_base_name"], len(data))
         with st.expander(data[0]["knowledge_base_name"]):
             for i in range(len(data)):
                 row_columns = st.columns((3, 2, 1))

@@ -36,17 +36,15 @@ DEFAULT_PAGE = "Create_Knowledge_Base.py"
 
 modal = Modal(
     title="📱 Whatsapp Assistant QR Code",
-    key="demo-modal",
-    padding=20,  # default value
-    max_width=744,  # default value
+    key="wapp-modal",
+    padding=20,
+    max_width=744,
 )
 
 
 def get_all_pages():
     default_pages = get_pages(DEFAULT_PAGE)
-
     pages_path = Path("pages.json")
-
     if pages_path.exists():
         saved_default_pages = json.loads(pages_path.read_text())
     else:
@@ -58,12 +56,10 @@ def get_all_pages():
 
 def clear_all_but_first_page():
     current_pages = get_pages(DEFAULT_PAGE)
-
     if len(current_pages.keys()) == 1:
         return
 
     get_all_pages()
-
     # Remove all but the first page
     key, val = list(current_pages.items())[0]
     current_pages.clear()
@@ -74,9 +70,7 @@ def clear_all_but_first_page():
 
 def show_all_pages():
     current_pages = get_pages(DEFAULT_PAGE)
-
     saved_pages = get_all_pages()
-
     # Replace all the missing pages
     for key in saved_pages:
         if key not in current_pages:
@@ -100,6 +94,8 @@ def init_state():
         state["name"] = ""
     if "reg_email" not in state:
         state["reg_email"] = ""
+    if "reg_phone_number" not in state:
+        state["reg_phone_number"] = ""
     if "reg_password" not in state:
         state["reg_password"] = ""
     if "confirm_password" not in state:
@@ -118,6 +114,8 @@ def init_state():
         state["prompt"] = (
             "You are a helpful assistant who helps with answering questions based on the provided information. If the information cannot be found in the text provided, you admit that I don't know"
         )
+    if "welcome_message" not in state:
+        state["welcome_message"] = ""
     if "phone_numbers" not in state:
         state["phone_numbers"] = {}
     if "rows" not in state:
@@ -129,8 +127,6 @@ def _check_cookie():
     if token is not None:
         token = token_decode(token)
         if token is not False:
-            print("INSIDE TOKEN")
-            print(token)
             if not state["logout"]:
                 if token["exp_date"] > datetime.utcnow().timestamp():
                     if "email" in token:
@@ -160,7 +156,6 @@ def _set_login_cb(email, password):
 
 
 def login(email, password):
-    print("INSIDE LOGIN")
     try:
         if not validator.validate_input_for_length(email):
             raise Exception("Email should not be empty")
@@ -170,18 +165,15 @@ def login(email, password):
         if tenant_detail is None:
             raise Exception("Invalid login credentials")
         else:
-            return verify_password(password, tenant_detail[-1])
+            return verify_password(password, tenant_detail[5])
     except Exception as e:
         st.error(e, icon="🚨")
 
 
 def logout():
-    print("INSIDE LOGOUT")
     cookie_manager.delete("Some cookie name")
-    print("BEFORE", cookie_manager.get(cookie="Some cookie name"))
     if "Some cookie name" in cookie_manager.cookies:
         del cookie_manager.cookies["Some cookie name"]
-    print("AFTER", cookie_manager.get(cookie="Some cookie name"))
     state["logout"] = True
     state["email"] = None
     state["password"] = None
@@ -202,7 +194,7 @@ def is_signup_option():
     state["login_button_type"] = "secondary"
 
 
-def _set_signup_cb(name, email, reg_password, confirm_password):
+def _set_signup_cb(name, email, phone_number, reg_password, confirm_password):
     try:
         if not validator.validate_input_for_length(name):
             raise Exception("Name should not be empty")
@@ -210,6 +202,8 @@ def _set_signup_cb(name, email, reg_password, confirm_password):
             raise Exception("Email should not be empty")
         if not validator.validate_email(email):
             raise Exception("Email is not valid")
+        if not validator.validate_input_for_length(phone_number):
+            raise Exception("Phone number should not be empty")
         registered_emails = tenant_repository.get_all_tenant_emails()
         if email in registered_emails:
             raise Exception("Email is already registered")
@@ -219,15 +213,14 @@ def _set_signup_cb(name, email, reg_password, confirm_password):
             raise Exception("Password/confirm password fields cannot be empty")
         if reg_password != confirm_password:
             raise Exception("Passwords do not match")
-        print("Inside Signup")
         with st.spinner("Registration in progress...."):
             tenant_repository.insert_into_tenant(
                 name=name,
                 email_id=email,
+                phone_number=phone_number,
                 api_key=generate_api_key(),
                 password=get_hashed_password(password=reg_password),
             )
-        print("Insertion complete")
         st.toast("Registration successful", icon="✅")
         time.sleep(1)
         is_login_option()
@@ -236,16 +229,8 @@ def _set_signup_cb(name, email, reg_password, confirm_password):
 
 
 def validate_phone_number(phone_number):
-    # Define a regular expression for a simple phone number pattern
-    pattern = re.compile(
-        r"^\d{10}$"
-    )  # Assuming a 10-digit phone number without any special characters
-
-    # Check if the entered phone number matches the pattern
-    if pattern.match(phone_number):
-        return True
-    else:
-        return False
+    pattern = re.compile(r"^\d{10}$")
+    return pattern.match(phone_number)
 
 
 def _remove_phone_number(key):
@@ -265,7 +250,6 @@ def create_input_components(key):
             options=tuple(country_phone_code_mapping.keys()),
             index=country_list.index(default_value),
         )
-
     with row_columns[1]:
         phone_number = st.text_input(
             "Enter the phone number",
@@ -282,7 +266,6 @@ def create_input_components(key):
             """,
             unsafe_allow_html=True,
         )
-
         st.button(
             label="Remove",
             key="rm_phone_number_input" + str(key),
@@ -294,7 +277,6 @@ def create_input_components(key):
             st.error(
                 "Invalid phone number. Please enter a valid number without spaces or special characters."
             )
-
     state["phone_numbers"][key] = {
         "country_phone_code": country_phone_code_mapping[selected_country],
         "phone_number": phone_number,
@@ -327,18 +309,26 @@ def _submit_data_cb(files):
                 state["uuid_number"] = response["uuid_number"]
                 file_names = [file[1].name for file in files]
                 tenant_repository.insert_into_tenant_document(
-                    state["uuid_number"],
-                    state["document_name"].strip(),
-                    file_names,
-                    state["prompt"],
+                    document_uuid=state["uuid_number"],
+                    document_name=state["document_name"].strip(),
+                    documents_list=file_names,
+                    prompt=state["prompt"],
+                    welcome_message=state["welcome_message"],
                 )
                 tenant_details = tenant_repository.get_tenant_details(state["email"])
+                tenant_repository.insert_into_tenant_bot(
+                    tenant_api_key=tenant_details[2],
+                    document_uuid=state["uuid_number"],
+                    phone_number="91" + tenant_details[6],
+                    country_code="91",
+                )
                 for _, value in state["phone_numbers"].items():
                     tenant_repository.insert_into_tenant_bot(
-                        tenant_details[2],
-                        state["uuid_number"],
-                        value.get("country_phone_code") + value.get("phone_number"),
-                        value.get("country_phone_code"),
+                        tenant_api_key=tenant_details[2],
+                        document_uuid=state["uuid_number"],
+                        phone_number=value.get("country_phone_code")
+                        + value.get("phone_number"),
+                        country_code=value.get("country_phone_code"),
                     )
         modal.open()
     except Exception as e:
@@ -402,6 +392,13 @@ def main():
                     kwargs={"reg_email": "reg_email_input"},
                 )
                 st.text_input(
+                    "Phone number:",
+                    value=state.reg_phone_number,
+                    key="reg_phone_number_input",
+                    on_change=_set_state_cb,
+                    kwargs={"reg_phone_number": "reg_phone_number_input"},
+                )
+                st.text_input(
                     "Password:",
                     type="password",
                     value=state.reg_password,
@@ -424,10 +421,11 @@ def main():
                         key="signup_submit",
                         on_click=_set_signup_cb,
                         args=(
-                            state.name,
-                            state.reg_email,
-                            state.reg_password,
-                            state.confirm_password,
+                            state["name"],
+                            state["reg_email"],
+                            state["reg_phone_number"],
+                            state["reg_password"],
+                            state["confirm_password"],
                         ),
                     )
 
@@ -455,9 +453,15 @@ def main():
                 on_change=_set_state_cb,
                 kwargs={"prompt": "prompt_input"},
             )
-
+            st.text_area(
+                "Welcome message:",
+                value=state.welcome_message,
+                key="welcome_message_input",
+                on_change=_set_state_cb,
+                kwargs={"welcome_message": "welcome_message_input"},
+            )
             st.markdown("---")
-            st.title("User Assignment")
+            st.title("Phone number Assignment")
 
             # Inject custom CSS to move the button to the left
             st.markdown(
@@ -470,9 +474,6 @@ def main():
                 """,
                 unsafe_allow_html=True,
             )
-
-            # Add a container for the button and apply custom CSS
-            # st.markdown('<div class="add-user">', unsafe_allow_html=True)
 
             for i, row in enumerate(state["rows"]):
                 st.markdown(f"User {i+1}")
