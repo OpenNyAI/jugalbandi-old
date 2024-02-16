@@ -34,6 +34,7 @@ from opentelemetry.propagate import inject
 from .query_with_tfidf import querying_with_tfidf
 from .server_env import init_env
 from .server_helper import (
+    PreResponseMiddleware,
     User,
     get_api_key,
     get_document_repository,
@@ -90,6 +91,7 @@ app = FastAPI(
     },
 )
 
+app.add_middleware(PreResponseMiddleware)
 
 # # Setting metrics middleware
 # app.add_middleware(PrometheusMiddleware, app_name=APP_NAME)
@@ -293,6 +295,7 @@ async def get_source_document(
 )
 async def get_speech_to_text(
     authorization: Annotated[User, Depends(verify_access_token)],
+    api_key: Annotated[APIKey, Depends(get_api_key)],
     speech_query_url: str,
     language: Language,
     speech_processor_enum: SpeechProcessorEnum,
@@ -317,6 +320,7 @@ async def get_speech_to_text(
 )
 async def get_text_to_speech(
     authorization: Annotated[User, Depends(verify_access_token)],
+    api_key: Annotated[APIKey, Depends(get_api_key)],
     text_query: str,
     language: Language,
     speech_processor_enum: SpeechProcessorEnum,
@@ -335,7 +339,7 @@ async def get_text_to_speech(
 
 
 # Temporary data addition
-@app.post("/logging-repo")
+@app.post("/logging-repo", include_in_schema=False)
 async def logging_repo(
     authorization: Annotated[User, Depends(verify_access_token)],
     logging_repository: Annotated[LoggingRepository, Depends(get_logging_repository)],

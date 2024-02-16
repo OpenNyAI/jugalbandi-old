@@ -1,13 +1,15 @@
+import json
 import os
 from typing import Annotated
 
-from fastapi import Depends, HTTPException, Security, status
+from fastapi import Depends, HTTPException, Request, Security, status
+from fastapi.responses import JSONResponse
 from fastapi.security import OAuth2PasswordBearer
 from fastapi.security.api_key import APIKeyHeader
 from jose import JWTError
 from jugalbandi.auth_token.token import decode_token
 from jugalbandi.core.caching import aiocached
-from jugalbandi.core.errors import QuotaExceededException, UnAuthorisedException
+from jugalbandi.core.errors import QuotaExceededException  # , UnAuthorisedException
 from jugalbandi.document_collection import (
     DocumentCollection,
     DocumentRepository,
@@ -37,6 +39,8 @@ from jugalbandi.translator import (
     Translator,
 )
 from pydantic import BaseModel
+from starlette.concurrency import iterate_in_threadpool
+from starlette.middleware.base import BaseHTTPMiddleware
 
 from .server_env import init_env
 
@@ -45,7 +49,7 @@ reusable_oauth = OAuth2PasswordBearer(tokenUrl="/auth/login", auto_error=False)
 
 
 async def verify_access_token(token: Annotated[str, Depends(reusable_oauth)]):
-    if os.environ["ALLOW_AUTH_ACCESS"] == "true" and token is None:
+    if os.getenv("ALLOW_AUTH_ACCESS") == "true" and token is None:
         return None
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
@@ -66,9 +70,9 @@ async def verify_access_token(token: Annotated[str, Depends(reusable_oauth)]):
 async def get_document_repository() -> DocumentRepository:
     # TODO: Rename the env variable
     return DocumentRepository(
-        LocalStorage(os.environ["DOCUMENT_LOCAL_STORAGE_PATH"]),
+        LocalStorage(os.getenv("DOCUMENT_LOCAL_STORAGE_PATH")),
         GoogleStorage(
-            os.environ["GCP_BUCKET_NAME"], os.environ["GCP_BUCKET_FOLDER_NAME"]
+            os.getenv("GCP_BUCKET_NAME"), os.getenv("GCP_BUCKET_FOLDER_NAME")
         ),
     )
 
@@ -149,19 +153,67 @@ async def get_api_key(
     tenant_repository: Annotated[TenantRepository, Depends(get_tenant_repository)],
     api_key_header: str = Security(api_key_header),
 ):
-    if os.environ["ALLOW_INVALID_API_KEY"] != "true":
+    if os.getenv("ALLOW_INVALID_API_KEY") != "true":
         if api_key_header:
-            balance_quota = await tenant_repository.get_balance_quota_from_api_key(
+            balance_quota = tenant_repository.get_balance_quota_from_api_key(
                 api_key_header
             )
             if balance_quota is None:
-                raise UnAuthorisedException("API key is invalid")
+                os.environ["API_KEY_STATUS"] = "false"
+                # raise UnAuthorisedException("API key is invalid")
             else:
-                if balance_quota > 0:
-                    await tenant_repository.update_balance_quota(
-                        api_key_header, balance_quota
+                if balance_quota[0] > 0:
+                    tenant_repository.update_balance_quota(
+                        api_key_header, balance_quota[0]
                     )
                 else:
                     raise QuotaExceededException("You have exceeded the Quota limit")
         else:
-            raise UnAuthorisedException("API Key is missing")
+            os.environ["API_KEY_STATUS"] = "false"
+            # raise UnAuthorisedException("API Key is missing")
+
+
+class PreResponseMiddleware(BaseHTTPMiddleware):
+    def __init__(self, app):
+        super().__init__(app)
+        self.endpoints = [
+            "/rephrased-query",
+            "/upload-files",
+            "/query",
+            "/speech-to-text",
+            "/text-to-speech",
+        ]
+        self.trial_message = (
+            "Your free subscription is going to end in 2 weeks. "
+            "Please contact here for registration: XXX. Response: "
+        )
+
+    async def dispatch(self, request: Request, call_next):
+        response = await call_next(request)
+        if request.url.path in self.endpoints:
+            print("Pre-response processing")
+            response_body = [section async for section in response.body_iterator]
+            response.body_iterator = iterate_in_threadpool(iter(response_body))
+            response_dict = json.loads(response_body[0].decode())
+            if os.getenv("API_KEY_STATUS") == "false":
+                if "rephrased_query" in response_dict:
+                    response_dict["rephrased_query"] = (
+                        self.trial_message + response_dict["rephrased_query"]
+                    )
+                if "message" in response_dict:
+                    response_dict["message"] = (
+                        self.trial_message + response_dict["message"]
+                    )
+                if "answer" in response_dict:
+                    response_dict["answer"] = (
+                        self.trial_message + response_dict["answer"]
+                    )
+                if "text" in response_dict:
+                    response_dict["text"] = self.trial_message + response_dict["text"]
+                if "audio_bytes" in response_dict:
+                    response_dict["audio_bytes"] = (
+                        self.trial_message + response_dict["audio_bytes"]
+                    )
+
+            return JSONResponse(response_dict)
+        return response
