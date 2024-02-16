@@ -3,7 +3,7 @@ import uuid
 
 import streamlit as st
 from helper import country_phone_code_mapping
-from tenant_repository import TenantRepository
+from jugalbandi.tenant.tenant_repository import TenantRepository
 
 tenant_repository = TenantRepository()
 state = st.session_state
@@ -52,23 +52,21 @@ def _remove_phone_number(bot, base_key):
 
 
 def init_state():
-    if state["bot_data"] == {}:
-        data = tenant_repository.get_tenant_document_details_from_email_id(
-            state["email"]
+    bot_data = {}
+    data = tenant_repository.get_tenant_document_details_from_email_id(state["email"])
+    for d in data:
+        base_key = str(uuid.uuid4())
+        if d[0] not in bot_data:
+            bot_data[d[0]] = []
+        bot_data[d[0]].append(
+            {
+                "base_key": base_key,
+                "phone_number": d[1][len(d[3]) :],
+                "knowledge_base_name": d[2],
+                "country_code": d[3],
+            }
         )
-        bot_data = {}
-        for d in data:
-            base_key = str(uuid.uuid4())
-            if d[0] not in bot_data:
-                bot_data[d[0]] = []
-            bot_data[d[0]].append(
-                {
-                    "base_key": base_key,
-                    "phone_number": d[1][len(d[3]) :],
-                    "knowledge_base_name": d[2],
-                    "country_code": d[3],
-                }
-            )
+    if state["bot_data"] == {} or state["bot_data"] != bot_data:
         state["bot_data"] = bot_data
 
 

@@ -17,6 +17,10 @@
       "path": "jb-labeling-service"
     },
     {
+      "name": "Streamlit UI",
+      "path": "jb-streamlit-ui"
+    },
+    {
       "name": "Package jb-core",
       "path": "packages/jb-core"
     },

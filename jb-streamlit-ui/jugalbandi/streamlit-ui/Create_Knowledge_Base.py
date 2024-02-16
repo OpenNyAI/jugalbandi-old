@@ -17,9 +17,9 @@ from helper import (
     token_encode,
     verify_password,
 )
+from jugalbandi.tenant.tenant_repository import TenantRepository
 from streamlit.source_util import _on_pages_changed, get_pages
 from streamlit_modal import Modal
-from tenant_repository import TenantRepository
 
 state = st.session_state
 st.set_page_config(
@@ -275,7 +275,8 @@ def create_input_components(key):
         )
         if phone_number and not validate_phone_number(phone_number):
             st.error(
-                "Invalid phone number. Please enter a valid number without spaces or special characters."
+                "Invalid phone number. Please enter a valid number without "
+                "spaces or special characters."
             )
     state["phone_numbers"][key] = {
         "country_phone_code": country_phone_code_mapping[selected_country],
@@ -502,7 +503,7 @@ def main():
                 _, column_two, _ = st.columns(3)
                 with column_two:
                     st.image(
-                        "jb_wa_qr.jpeg",
+                        "./media/jb_wa_qr.jpeg",
                         width=250,
                         caption="Scan this QR code to talk to your document over Whatsapp",
                     )
