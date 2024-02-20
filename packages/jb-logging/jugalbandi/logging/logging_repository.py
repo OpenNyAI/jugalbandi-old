@@ -36,7 +36,7 @@ class LoggingRepository:
             await connection.execute(
                 """
                 CREATE TABLE IF NOT EXISTS jb_document_store_log(
-                    tenant_api_key INTEGER,
+                    tenant_api_key TEXT,
                     uuid TEXT PRIMARY KEY,
                     documents_list TEXT[],
                     total_file_size FLOAT,
@@ -47,7 +47,7 @@ class LoggingRepository:
                 );
                 CREATE TABLE IF NOT EXISTS jb_qa_log(
                     id TEXT PRIMARY KEY,
-                    tenant_api_key INTEGER,
+                    tenant_api_key TEXT,
                     document_uuid TEXT,
                     input_language TEXT DEFAULT 'en',
                     query TEXT,
@@ -67,7 +67,7 @@ class LoggingRepository:
                 );
                 CREATE TABLE IF NOT EXISTS jb_stt_log(
                     id SERIAL PRIMARY KEY,
-                    qa_log_id INTEGER,
+                    qa_log_id TEXT,
                     audio_input_bytes TEXT,
                     model_name TEXT,
                     text TEXT,
@@ -79,7 +79,7 @@ class LoggingRepository:
                 );
                 CREATE TABLE IF NOT EXISTS jb_tts_log(
                     id SERIAL PRIMARY KEY,
-                    qa_log_id INTEGER,
+                    qa_log_id TEXT,
                     text TEXT,
                     model_name TEXT,
                     audio_output_bytes TEXT,
@@ -91,7 +91,7 @@ class LoggingRepository:
                 );
                 CREATE TABLE IF NOT EXISTS jb_translator_log(
                     id SERIAL PRIMARY KEY,
-                    qa_log_id INTEGER,
+                    qa_log_id TEXT,
                     text TEXT,
                     input_language TEXT,
                     output_language TEXT,
@@ -105,7 +105,7 @@ class LoggingRepository:
                 );
                 CREATE TABLE IF NOT EXISTS jb_chat_history(
                     id SERIAL PRIMARY KEY,
-                    tenant_api_key INTEGER,
+                    tenant_api_key TEXT,
                     document_uuid TEXT,
                     message_owner TEXT NOT NULL,
                     preferred_language TEXT NOT NULL,
@@ -117,9 +117,6 @@ class LoggingRepository:
                     FOREIGN KEY (document_uuid) REFERENCES jb_document_store_log(uuid)
                 );
 
-                CREATE INDEX IF NOT EXISTS jb_users_phone_number_idx ON jb_users(phone_number);
-                CREATE INDEX IF NOT EXISTS jb_users_first_name_idx ON jb_users(first_name);
-                CREATE INDEX IF NOT EXISTS jb_app_phone_number_idx ON jb_app(phone_number);
                 CREATE INDEX IF NOT EXISTS jb_document_store_log_uuid_idx ON jb_document_store_log(uuid);
                 CREATE INDEX IF NOT EXISTS jb_qa_log_tenant_api_key_idx ON jb_qa_log(tenant_api_key);
                 CREATE INDEX IF NOT EXISTS jb_qa_log_document_uuid_idx ON jb_qa_log(document_uuid);
@@ -129,37 +126,6 @@ class LoggingRepository:
                 CREATE INDEX IF NOT EXISTS jb_chat_history_tenant_api_key_idx ON jb_chat_history(tenant_api_key);
                 CREATE INDEX IF NOT EXISTS jb_chat_history_document_uuid_idx ON jb_chat_history(document_uuid);
             """
-            )
-
-    async def insert_users_information(
-        self, first_name: str, last_name: str, phone_number: int
-    ):
-        engine = await self._get_engine()
-        async with engine.acquire() as connection:
-            await connection.execute(
-                """
-                INSERT INTO jb_users
-                (first_name, last_name, phone_number, created_at)
-                VALUES ($1, $2, $3, $4)
-                """,
-                first_name,
-                last_name,
-                phone_number,
-                datetime.now(pytz.UTC),
-            )
-
-    async def insert_app_information(self, name: str, phone_number: int):
-        engine = await self._get_engine()
-        async with engine.acquire() as connection:
-            await connection.execute(
-                """
-                INSERT INTO jb_app
-                (name, phone_number, created_at)
-                VALUES ($1, $2, $3)
-                """,
-                name,
-                phone_number,
-                datetime.now(pytz.UTC),
             )
 
     async def insert_document_store_log(
@@ -178,7 +144,7 @@ class LoggingRepository:
                 INSERT INTO jb_document_store_log
                 (tenant_api_key, uuid, documents_list,
                 total_file_size, status_code, status_message, created_at)
-                VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+                VALUES ($1, $2, $3, $4, $5, $6, $7)
                 """,
                 tenant_api_key,
                 uuid,
@@ -239,7 +205,7 @@ class LoggingRepository:
 
     async def insert_stt_log(
         self,
-        qa_log_id: int,
+        qa_log_id: str,
         audio_input_bytes: str,
         model_name: str,
         text: str,
@@ -269,7 +235,7 @@ class LoggingRepository:
 
     async def insert_tts_log(
         self,
-        qa_log_id: int,
+        qa_log_id: str,
         text: str,
         model_name: str,
         audio_output_bytes: str,
@@ -299,7 +265,7 @@ class LoggingRepository:
 
     async def insert_translator_log(
         self,
-        qa_log_id: int,
+        qa_log_id: str,
         text: str,
         input_language: str,
         output_language: str,
@@ -349,7 +315,7 @@ class LoggingRepository:
                 (tenant_api_key, document_uuid,
                 message_owner, preferred_language, audio_url,
                 message, message_in_english, created_at)
-                VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+                VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
                 """,
                 tenant_api_key,
                 document_uuid,

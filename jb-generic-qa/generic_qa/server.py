@@ -1,4 +1,5 @@
 import base64
+import os
 from typing import Annotated, List
 
 import httpx
@@ -8,7 +9,12 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, Response
 from fastapi.security.api_key import APIKey
 from jugalbandi.audio_converter import convert_to_wav_with_ffmpeg
-from jugalbandi.core import IncorrectInputException, Language, MediaFormat
+from jugalbandi.core import (
+    IncorrectInputException,
+    InternalServerException,
+    Language,
+    MediaFormat,
+)
 from jugalbandi.core import SpeechProcessor as SpeechProcessorEnum
 from jugalbandi.document_collection import DocumentRepository, DocumentSourceFile
 from jugalbandi.feedback import FeedbackRepository
@@ -160,23 +166,54 @@ async def upload_files(
         DocumentRepository, Depends(get_document_repository)
     ],
     text_converter: Annotated[TextConverter, Depends(get_text_converter)],
+    logging_repository: Annotated[LoggingRepository, Depends(get_logging_repository)],
 ):
+    # Temporary fix
+    if not api_key:
+        api_key = os.getenv("DEFAULT_API_KEY")
+
     document_collection = document_repository.new_collection()
     uuid_number = document_collection.id
-    source_files = [DocumentSourceFile(file.filename, file) for file in files]
     logger.info(f"UUID number: {uuid_number}")
-    for file in source_files:
+
+    source_files = []
+    filenames = []
+    file_size = 0
+    for file in files:
+        source_files.append(DocumentSourceFile(file.filename, file))
+        filenames.append(file.filename)
+        file_size += file.size
         logger.info(f"File name: {file.filename}")
-    await document_collection.init_from_files(source_files)
 
-    async for filename in document_collection.list_files():
-        await text_converter.textify(filename, document_collection)
-    logger.info("Textification is successful")
+    try:
+        await document_collection.init_from_files(source_files)
+        async for filename in document_collection.list_files():
+            await text_converter.textify(filename, document_collection)
+        logger.info(f"Textification is successful for {uuid_number}")
+        langchain_indexer = LangchainIndexer()
+        await langchain_indexer.index(document_collection)
+        logger.info(f"Langchain Indexing is successful for {uuid_number}")
+    except Exception as exception:
+        error_message = f"Request failed with this error: {exception}"
+        logger.error(error_message)
+        await logging_repository.insert_document_store_log(
+            tenant_api_key=api_key,
+            uuid=uuid_number,
+            documents_list=filenames,
+            total_file_size=file_size,
+            status_code=500,
+            status_message=error_message,
+        )
+        raise InternalServerException(error_message)
 
-    langchain_indexer = LangchainIndexer()
-    await langchain_indexer.index(document_collection)
-    logger.info(f"Langchain Indexing is successful for {uuid_number}")
-
+    await logging_repository.insert_document_store_log(
+        tenant_api_key=api_key,
+        uuid=uuid_number,
+        documents_list=filenames,
+        total_file_size=file_size,
+        status_code=200,
+        status_message="Files uploading is successful",
+    )
     return {
         "uuid_number": uuid_number,
         "message": "Files uploading is successful",
@@ -335,49 +372,6 @@ async def get_text_to_speech(
     audio_bytes = await speech_processor.text_to_speech(text_query, language)
     audio_base64 = base64.b64encode(audio_bytes).decode("utf-8")
     return {"audio_bytes": audio_base64}
-
-
-# Temporary data addition
-@app.post("/logging-repo", include_in_schema=False)
-async def logging_repo(
-    authorization: Annotated[User, Depends(verify_access_token)],
-    logging_repository: Annotated[LoggingRepository, Depends(get_logging_repository)],
-):
-    # await logging_repository.insert_users_information("Hello", "Bye", 91234567890)
-    # await logging_repository.insert_app_information("App1", 62846563489)
-    # await logging_repository.insert_document_store_log(1, 1, "545634353434", ["Hello", "Bye"],
-    #                                                    40, 200, "Successful upload")
-    await logging_repository.insert_qa_log(
-        1,
-        1,
-        "545634353434",
-        "en",
-        "How are you",
-        "some-link",
-        "I'm fine",
-        "some-link",
-        5,
-        ["1", "2", "3", "4"],
-        "some-prompt",
-        "gpt-4",
-        200,
-        "Success",
-        10,
-    )
-    await logging_repository.insert_stt_log(
-        1, "some-link", "bhashini", "somshsdjf", 200, "success", 5
-    )
-    await logging_repository.insert_tts_log(
-        1, "some-text", "bhashini", "some-link", 200, "success", 5
-    )
-    await logging_repository.insert_translator_log(
-        1, "some-text", "hi", "en", "bhashini", "translated-text", 200, "success", 5
-    )
-    await logging_repository.insert_chat_history(
-        1, 1, "545634353434", "user", "en", "some-link", "hello", "bye"
-    )
-
-    return "Logging is successful"
 
 
 app.mount("/auth", auth_app)
