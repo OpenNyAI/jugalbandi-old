@@ -7,9 +7,10 @@ import aiohttp
 import httpx
 from google.cloud.translate import TranslationServiceAsyncClient
 from jugalbandi.core import InternalServerException, Language
-from jugalbandi.logging import Logger
+from jugalbandi.logging import Logger, LoggingRepository
 
 logger = Logger("translator")
+logging_repository = LoggingRepository()
 
 
 class Translator(ABC):
@@ -74,7 +75,11 @@ class DhruvaTranslator(Translator):
         return response.json()
 
     async def translate_text(
-        self, text: str, source_language: Language, destination_language: Language
+        self,
+        qa_id: str,
+        text: str,
+        source_language: Language,
+        destination_language: Language,
     ) -> str:
         source = source_language.name.lower()
         destination = destination_language.name.lower()
@@ -85,7 +90,6 @@ class DhruvaTranslator(Translator):
         bhashini_translation_config = await self.perform_bhashini_config_call(
             task="translation", source_language=source, target_language=destination
         )
-
         payload = json.dumps(
             {
                 "pipelineTasks": [
@@ -125,20 +129,41 @@ class DhruvaTranslator(Translator):
         async with httpx.AsyncClient() as client:
             response = await client.post(
                 url=self.bhashini_inference_url, headers=headers, data=payload
-            )  # type: ignore
+            )
         if response.status_code != 200:
             error_message = (
                 f"Request failed with response.text: {response.text} and "
                 f"status_code: {response.status_code}"
             )
             logger.error(error_message)
+            await logging_repository.insert_translator_log(
+                qa_log_id=qa_id,
+                text=text,
+                input_language=source,
+                output_language=destination,
+                model_name="Bhashini",
+                translated_text="",
+                status_code=response.status_code,
+                status_message=response.text,
+            )
             raise InternalServerException(error_message)
 
-        indicText = response.json()["pipelineResponse"][0]["output"][0]["target"]
-        logger.info("Dhruva (Bhashini) translation is successful")
+        translated_text = response.json()["pipelineResponse"][0]["output"][0]["target"]
+        return_message = "Dhruva (Bhashini) translation is successful"
+        logger.info(return_message)
         logger.info(f"Input Text: {text}")
-        logger.info(f"Translated Text: {indicText}")
-        return indicText
+        logger.info(f"Translated Text: {translated_text}")
+        await logging_repository.insert_translator_log(
+            qa_log_id=qa_id,
+            text=text,
+            input_language=source,
+            output_language=destination,
+            model_name="Bhashini",
+            translated_text=translated_text,
+            status_code=200,
+            status_message=return_message,
+        )
+        return translated_text
 
 
 class AzureTranslator(Translator):
@@ -148,7 +173,11 @@ class AzureTranslator(Translator):
         self.endpoint = "https://api.cognitive.microsofttranslator.com"
 
     async def translate_text(
-        self, text: str, source_language: Language, destination_language: Language
+        self,
+        qa_id: str,
+        text: str,
+        source_language: Language,
+        destination_language: Language,
     ) -> str:
         path = "/translate"
         constructed_url = self.endpoint + path
@@ -190,12 +219,33 @@ class AzureTranslator(Translator):
                 except Exception as exception:
                     error_message = f"Request failed with this error: {exception}"
                     logger.error(error_message)
+                    await logging_repository.insert_translator_log(
+                        qa_log_id=qa_id,
+                        text=text,
+                        input_language=source_language.name.lower(),
+                        output_language=destination_language.name.lower(),
+                        model_name="Azure",
+                        translated_text="",
+                        status_code=500,
+                        status_message=error_message,
+                    )
                     raise InternalServerException(error_message)
 
                 translated_text = response[0]["translations"][0]["text"]
-                logger.info("Azure translation is successful")
+                return_message = "Azure translation is successful"
+                logger.info(return_message)
                 logger.info(f"Input Text: {text}")
                 logger.info(f"Translated Text: {translated_text}")
+                await logging_repository.insert_translator_log(
+                    qa_log_id=qa_id,
+                    text=text,
+                    input_language=source_language.name.lower(),
+                    output_language=destination_language.name.lower(),
+                    model_name="Azure",
+                    translated_text=translated_text,
+                    status_code=200,
+                    status_message=return_message,
+                )
                 return translated_text
 
     async def transliterate_text(
@@ -230,15 +280,21 @@ class AzureTranslator(Translator):
 
 
 class GoogleTranslator(Translator):
+
     async def translate_text(
-        self, text: str, source_language: Language, destination_language: Language
+        self,
+        qa_id: str,
+        text: str,
+        source_language: Language,
+        destination_language: Language,
     ) -> str:
+        source = source_language.name.lower()
+        destination = destination_language.name.lower()
         logger.info("Performing translation using Google")
-        logger.info(f"Input Language: {source_language.name}")
-        logger.info(f"Output Language: {destination_language.name}")
+        logger.info(f"Input Language: {source}")
+        logger.info(f"Output Language: {destination}")
         client = TranslationServiceAsyncClient()
         location = "global"
-        # TODO: make the project_id versatile
         project_id = "indian-legal-bert"
         parent = f"projects/{project_id}/locations/{location}"
         try:
@@ -247,19 +303,40 @@ class GoogleTranslator(Translator):
                     "parent": parent,
                     "contents": [text],
                     "mime_type": "text/plain",
-                    "source_language_code": source_language.name.lower(),
-                    "target_language_code": destination_language.name.lower(),
+                    "source_language_code": source,
+                    "target_language_code": destination,
                 }
             )
         except Exception as exception:
             error_message = f"Request failed with this error: {exception}"
             logger.error(error_message)
+            await logging_repository.insert_translator_log(
+                qa_log_id=qa_id,
+                text=text,
+                input_language=source,
+                output_language=destination,
+                model_name="Google",
+                translated_text="",
+                status_code=500,
+                status_message=error_message,
+            )
             raise InternalServerException(error_message)
 
         translated_text = response.translations[0].translated_text
-        logger.info("Google translation is successful")
+        return_message = "Google translation is successful"
+        logger.info(return_message)
         logger.info(f"Input Text: {text}")
         logger.info(f"Translated Text: {translated_text}")
+        await logging_repository.insert_translator_log(
+            qa_log_id=qa_id,
+            text=text,
+            input_language=source,
+            output_language=destination,
+            model_name="Google",
+            translated_text=translated_text,
+            status_code=200,
+            status_message=return_message,
+        )
         return translated_text
 
 
@@ -268,7 +345,11 @@ class CompositeTranslator(Translator):
         self.translators = translators
 
     async def translate_text(
-        self, text: str, source_language: Language, destination_language: Language
+        self,
+        qa_id: str,
+        text: str,
+        source_language: Language,
+        destination_language: Language,
     ) -> str:
         if source_language.value == destination_language.value:
             return text
@@ -276,9 +357,8 @@ class CompositeTranslator(Translator):
         excs = []
         for translator in self.translators:
             try:
-                print("INSIDE THIS translator", translator)
                 return await translator.translate_text(
-                    text, source_language, destination_language
+                    qa_id, text, source_language, destination_language
                 )
             except Exception as exc:
                 excs.append(exc)

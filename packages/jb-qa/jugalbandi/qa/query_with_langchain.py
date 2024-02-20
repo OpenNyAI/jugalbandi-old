@@ -1,14 +1,11 @@
 import openai
-from langchain.embeddings.openai import OpenAIEmbeddings
-from langchain.vectorstores.faiss import FAISS
-from langchain.prompts import PromptTemplate
-from langchain.llms.openai import OpenAI
-from langchain.chains import LLMChain
-from jugalbandi.core.errors import (
-    InternalServerException,
-    ServiceUnavailableException
-)
+from jugalbandi.core.errors import InternalServerException, ServiceUnavailableException
 from jugalbandi.document_collection import DocumentCollection
+from langchain.chains import LLMChain
+from langchain.embeddings.openai import OpenAIEmbeddings
+from langchain.llms.openai import OpenAI
+from langchain.prompts import PromptTemplate
+from langchain.vectorstores.faiss import FAISS
 
 
 async def rephrased_question(user_query: str):
@@ -21,30 +18,36 @@ async def rephrased_question(user_query: str):
     Rephrased User input:"""
     )
     prompt = PromptTemplate(template=template, input_variables=["question"])
-    llm_chain = LLMChain(prompt=prompt,
-                         llm=OpenAI(temperature=0, model="gpt-3.5-turbo-instruct"),
-                         verbose=False)
+    llm_chain = LLMChain(
+        prompt=prompt,
+        llm=OpenAI(temperature=0, model="gpt-3.5-turbo-instruct"),
+        verbose=False,
+    )
     response = llm_chain.predict(question=user_query)
     return response.strip()
 
 
-async def querying_with_langchain(document_collection: DocumentCollection,
-                                  query: str,
-                                  prompt: str,
-                                  model_name: str):
-    await document_collection.download_index_files("langchain", "index.faiss",
-                                                   "index.pkl")
+async def querying_with_langchain(
+    document_collection: DocumentCollection,
+    query: str,
+    prompt: str,
+    model_name: str,
+    k_value: int = 5,
+):
+    await document_collection.download_index_files(
+        "langchain", "index.faiss", "index.pkl"
+    )
     index_folder_path = document_collection.local_index_folder("langchain")
     try:
-        search_index = FAISS.load_local(index_folder_path,
-                                        OpenAIEmbeddings())  # type: ignore
-        documents = search_index.similarity_search(query, k=5)
-        contexts = [document.page_content for document in documents]
+        search_index = FAISS.load_local(
+            index_folder_path, OpenAIEmbeddings()
+        )  # type: ignore
+        documents = search_index.similarity_search(query, k=k_value)
+        chunks = [document.page_content for document in documents]
         augmented_query = augmented_query = (
-                "Information to search for answers:\n\n"
-                "\n\n-----\n\n".join(contexts) +
-                "\n\n-----\n\nQuery:" + query
-            )
+            "Information to search for answers:\n\n"
+            "\n\n-----\n\n".join(chunks) + "\n\n-----\n\nQuery:" + query
+        )
 
         if prompt != "":
             system_rules = prompt
@@ -61,7 +64,8 @@ async def querying_with_langchain(document_collection: DocumentCollection,
                 {"role": "user", "content": augmented_query},
             ],
         )
-        return res["choices"][0]["message"]["content"]
+        response = res["choices"][0]["message"]["content"]
+        return (k_value, chunks, system_rules, response)
 
     except openai.error.RateLimitError as e:
         raise ServiceUnavailableException(

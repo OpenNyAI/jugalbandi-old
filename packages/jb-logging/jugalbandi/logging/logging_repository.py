@@ -49,7 +49,7 @@ class LoggingRepository:
                     id TEXT PRIMARY KEY,
                     tenant_api_key TEXT,
                     document_uuid TEXT,
-                    input_language TEXT DEFAULT 'en',
+                    input_language TEXT,
                     query TEXT,
                     audio_input_link TEXT,
                     response TEXT,
@@ -60,7 +60,6 @@ class LoggingRepository:
                     gpt_model_name TEXT,
                     status_code INTEGER,
                     status_message TEXT,
-                    response_time INTEGER,
                     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
                     FOREIGN KEY (tenant_api_key) REFERENCES tenant(api_key),
                     FOREIGN KEY (document_uuid) REFERENCES jb_document_store_log(uuid)
@@ -73,7 +72,6 @@ class LoggingRepository:
                     text TEXT,
                     status_code INTEGER,
                     status_message TEXT,
-                    response_time INTEGER,
                     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
                     FOREIGN KEY (qa_log_id) REFERENCES jb_qa_log(id)
                 );
@@ -85,7 +83,6 @@ class LoggingRepository:
                     audio_output_bytes TEXT,
                     status_code INTEGER,
                     status_message TEXT,
-                    response_time INTEGER,
                     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
                     FOREIGN KEY (qa_log_id) REFERENCES jb_qa_log(id)
                 );
@@ -99,7 +96,6 @@ class LoggingRepository:
                     translated_text TEXT,
                     status_code INTEGER,
                     status_message TEXT,
-                    response_time INTEGER,
                     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
                     FOREIGN KEY (qa_log_id) REFERENCES jb_qa_log(id)
                 );
@@ -171,7 +167,6 @@ class LoggingRepository:
         gpt_model_name: str,
         status_code: int,
         status_message: str,
-        response_time: int,
     ):
         engine = await self._get_engine()
         async with engine.acquire() as connection:
@@ -181,9 +176,9 @@ class LoggingRepository:
                 (id, tenant_api_key, document_uuid, input_language,
                 query, audio_input_link, response, audio_output_link,
                 retrieval_k_value, retrieved_chunks, prompt, gpt_model_name,
-                status_code, status_message, response_time, created_at)
+                status_code, status_message, created_at)
                 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11,
-                $12, $13, $14, $15, $16)
+                $12, $13, $14, $15)
                 """,
                 id,
                 tenant_api_key,
@@ -199,7 +194,6 @@ class LoggingRepository:
                 gpt_model_name,
                 status_code,
                 status_message,
-                response_time,
                 datetime.now(pytz.UTC),
             )
 
@@ -211,7 +205,6 @@ class LoggingRepository:
         text: str,
         status_code: int,
         status_message: str,
-        response_time: int,
     ):
         engine = await self._get_engine()
         async with engine.acquire() as connection:
@@ -219,9 +212,8 @@ class LoggingRepository:
                 """
                 INSERT INTO jb_stt_log
                 (qa_log_id, audio_input_bytes, model_name,
-                text, status_code, status_message,
-                response_time, created_at)
-                VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+                text, status_code, status_message, created_at)
+                VALUES ($1, $2, $3, $4, $5, $6, $7)
                 """,
                 qa_log_id,
                 audio_input_bytes,
@@ -229,7 +221,6 @@ class LoggingRepository:
                 text,
                 status_code,
                 status_message,
-                response_time,
                 datetime.now(pytz.UTC),
             )
 
@@ -241,17 +232,15 @@ class LoggingRepository:
         audio_output_bytes: str,
         status_code: int,
         status_message: str,
-        response_time: int,
     ):
         engine = await self._get_engine()
         async with engine.acquire() as connection:
             await connection.execute(
                 """
                 INSERT INTO jb_tts_log
-                (qa_log_id, text, model_name,
-                audio_output_bytes, status_code, status_message,
-                response_time, created_at)
-                VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+                (qa_log_id, text, model_name, audio_output_bytes,
+                status_code, status_message, created_at)
+                VALUES ($1, $2, $3, $4, $5, $6, $7)
                 """,
                 qa_log_id,
                 text,
@@ -259,7 +248,6 @@ class LoggingRepository:
                 audio_output_bytes,
                 status_code,
                 status_message,
-                response_time,
                 datetime.now(pytz.UTC),
             )
 
@@ -273,7 +261,6 @@ class LoggingRepository:
         translated_text: str,
         status_code: int,
         status_message: str,
-        response_time: int,
     ):
         engine = await self._get_engine()
         async with engine.acquire() as connection:
@@ -282,8 +269,8 @@ class LoggingRepository:
                 INSERT INTO jb_translator_log
                 (qa_log_id, text, input_language, output_language,
                 model_name, translated_text, status_code,
-                status_message, response_time, created_at)
-                VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+                status_message, created_at)
+                VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
                 """,
                 qa_log_id,
                 text,
@@ -293,7 +280,6 @@ class LoggingRepository:
                 translated_text,
                 status_code,
                 status_message,
-                response_time,
                 datetime.now(pytz.UTC),
             )
 

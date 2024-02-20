@@ -108,19 +108,6 @@ async def get_gpt_index_qa_engine(
     return GPTIndexQAEngine(document_collection, speech_processor, translator)
 
 
-async def get_langchain_qa_engine(
-    document_collection: Annotated[
-        DocumentCollection, Depends(get_document_collection)
-    ],
-    speech_processor: Annotated[DocumentCollection, Depends(get_speech_processor)],
-    translator: Annotated[Translator, Depends(get_translator)],
-    gpt_model: LangchainQAModel,
-):
-    return LangchainQAEngine(
-        document_collection, speech_processor, translator, gpt_model
-    )
-
-
 @aiocached(cache={})
 async def get_feedback_repository() -> FeedbackRepository:
     return QAFeedbackRepository()
@@ -139,6 +126,20 @@ async def get_tenant_repository() -> TenantRepository:
 @aiocached(cache={})
 async def get_text_converter() -> TextConverter:
     return TextConverter()
+
+
+async def get_langchain_qa_engine(
+    document_collection: Annotated[
+        DocumentCollection, Depends(get_document_collection)
+    ],
+    speech_processor: Annotated[DocumentCollection, Depends(get_speech_processor)],
+    translator: Annotated[Translator, Depends(get_translator)],
+    gpt_model: LangchainQAModel,
+    logging_repository: Annotated[LoggingRepository, Depends(get_logging_repository)],
+):
+    return LangchainQAEngine(
+        document_collection, speech_processor, translator, gpt_model, logging_repository
+    )
 
 
 class User(BaseModel):

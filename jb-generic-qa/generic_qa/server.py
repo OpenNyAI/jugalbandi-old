@@ -246,8 +246,13 @@ async def query(
         ),
     ),
 ) -> QueryResponse:
+    # Temporary fix
+    if not api_key:
+        api_key = os.getenv("DEFAULT_API_KEY")
+
     logger.info("Querying started")
     return await langchain_qa_engine.query(
+        api_key=api_key,
         query=query_text,
         speech_query_url=audio_url,
         prompt=prompt,

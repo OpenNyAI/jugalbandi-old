@@ -9,9 +9,10 @@ import httpx
 from google.cloud import speech, texttospeech
 from jugalbandi.audio_converter.converter import convert_wav_bytes_to_mp3_bytes
 from jugalbandi.core import InternalServerException, Language
-from jugalbandi.logging import Logger
+from jugalbandi.logging import Logger, LoggingRepository
 
 logger = Logger("speech_processor")
+logging_repository = LoggingRepository()
 
 
 class SpeechProcessor(ABC):
@@ -77,7 +78,9 @@ class DhruvaSpeechProcessor(SpeechProcessor):
 
         return response.json()
 
-    async def speech_to_text(self, wav_data: bytes, input_language: Language) -> str:
+    async def speech_to_text(
+        self, qa_id: str, wav_data: bytes, input_language: Language
+    ) -> str:
         logger.info("Performing speech to text using Dhruva (Bhashini)")
         logger.info(f"Input Language: {input_language.name}")
         bhashini_asr_config = await self.perform_bhashini_config_call(
@@ -129,15 +132,32 @@ class DhruvaSpeechProcessor(SpeechProcessor):
                 f"status_code: {response.status_code}"
             )
             logger.error(error_message)
+            await logging_repository.insert_stt_log(
+                qa_log_id=qa_id,
+                audio_input_bytes=str(wav_data),
+                model_name="Bhashini",
+                text="",
+                status_code=response.status_code,
+                status_message=response.text,
+            )
             raise InternalServerException(error_message)
 
         transcribed_text = response.json()["pipelineResponse"][0]["output"][0]["source"]
-        logger.info("Dhruva (Bhashini) speech to text is successful")
+        return_message = "Dhruva (Bhashini) speech to text is successful"
+        logger.info(return_message)
         logger.info(f"Transcribed text: {transcribed_text}")
+        await logging_repository.insert_stt_log(
+            qa_log_id=qa_id,
+            audio_input_bytes=str(wav_data),
+            model_name="Bhashini",
+            text=transcribed_text,
+            status_code=200,
+            status_message=return_message,
+        )
         return transcribed_text
 
     async def text_to_speech(
-        self, text: str, input_language: Language, gender="female"
+        self, qa_id: str, text: str, input_language: Language, gender="female"
     ) -> bytes:
         logger.info("Performing text to speech using Dhruva (Bhashini)")
         logger.info(f"Input Language: {input_language.name}")
@@ -182,13 +202,21 @@ class DhruvaSpeechProcessor(SpeechProcessor):
         async with httpx.AsyncClient() as client:
             response = await client.post(
                 url=self.bhashini_inference_url, headers=headers, data=payload
-            )  # type: ignore
+            )
         if response.status_code != 200:
             error_message = (
                 f"Request failed with response.text: {response.text} and "
                 f"status_code: {response.status_code}"
             )
             logger.error(error_message)
+            await logging_repository.insert_tts_log(
+                qa_log_id=qa_id,
+                text=text,
+                model_name="Bhashini",
+                audio_output_bytes="",
+                status_code=500,
+                status_message=error_message,
+            )
             raise InternalServerException(error_message)
 
         audio_content = response.json()["pipelineResponse"][0]["audio"][0][
@@ -196,7 +224,16 @@ class DhruvaSpeechProcessor(SpeechProcessor):
         ]
         audio_content = base64.b64decode(audio_content)
         new_audio_content = convert_wav_bytes_to_mp3_bytes(audio_content)
-        logger.info("Dhruva (Bhashini) text to speech is successful")
+        return_message = "Dhruva (Bhashini) text to speech is successful"
+        logger.info(return_message)
+        await logging_repository.insert_tts_log(
+            qa_log_id=qa_id,
+            text=text,
+            model_name="Bhashini",
+            audio_output_bytes=new_audio_content,
+            status_code=200,
+            status_message=return_message,
+        )
         return new_audio_content
 
 
@@ -229,7 +266,9 @@ class GoogleSpeechProcessor(SpeechProcessor):
             "TR": "tr-TR",
         }
 
-    async def speech_to_text(self, wav_data: bytes, input_language: Language) -> str:
+    async def speech_to_text(
+        self, qa_id: str, wav_data: bytes, input_language: Language
+    ) -> str:
         logger.info("Performing speech to text using Google")
         logger.info(f"Input Language: {input_language.name}")
         language_code = self.language_dict[input_language.name]
@@ -247,14 +286,33 @@ class GoogleSpeechProcessor(SpeechProcessor):
         except Exception as exception:
             error_message = f"Request failed with this error: {exception}"
             logger.error(error_message)
+            await logging_repository.insert_stt_log(
+                qa_log_id=qa_id,
+                audio_input_bytes=str(wav_data),
+                model_name="Google",
+                text="",
+                status_code=500,
+                status_message=error_message,
+            )
             raise InternalServerException(error_message)
 
         transcribed_text = response.results[0].alternatives[0].transcript
-        logger.info("Google speech to text is successful")
+        return_message = "Google speech to text is successful"
+        logger.info(return_message)
         logger.info(f"Transcribed text: {transcribed_text}")
+        await logging_repository.insert_stt_log(
+            qa_log_id=qa_id,
+            audio_input_bytes=str(wav_data),
+            model_name="Google",
+            text=transcribed_text,
+            status_code=200,
+            status_message=return_message,
+        )
         return transcribed_text
 
-    async def text_to_speech(self, text: str, input_language: Language) -> bytes:
+    async def text_to_speech(
+        self, qa_id: str, text: str, input_language: Language
+    ) -> bytes:
         logger.info("Performing text to speech using Google")
         logger.info(f"Input Language: {input_language.name}")
         logger.info(f"Input Text: {text}")
@@ -281,10 +339,27 @@ class GoogleSpeechProcessor(SpeechProcessor):
         except Exception as exception:
             error_message = f"Request failed with this error: {exception}"
             logger.error(error_message)
+            await logging_repository.insert_tts_log(
+                qa_log_id=qa_id,
+                text=text,
+                model_name="Google",
+                audio_output_bytes="",
+                status_code=500,
+                status_message=error_message,
+            )
             raise InternalServerException(error_message)
 
         audio_content = response.audio_content
-        logger.info("Google text to speech is successful")
+        return_message = "Google text to speech is successful"
+        logger.info(return_message)
+        await logging_repository.insert_tts_log(
+            qa_log_id=qa_id,
+            text=text,
+            model_name="Google",
+            audio_output_bytes=audio_content,
+            status_code=200,
+            status_message=return_message,
+        )
         return audio_content
 
 
@@ -321,7 +396,9 @@ class AzureSpeechProcessor(SpeechProcessor):
             region=os.getenv("AZURE_SPEECH_REGION"),
         )
 
-    async def speech_to_text(self, wav_data: bytes, input_language: Language) -> str:
+    async def speech_to_text(
+        self, qa_id: str, wav_data: bytes, input_language: Language
+    ) -> str:
         logger.info("Performing speech to text using Azure")
         logger.info(f"Input Language: {input_language.name}")
         language_code = self.language_dict[input_language.name][0]
@@ -338,16 +415,35 @@ class AzureSpeechProcessor(SpeechProcessor):
         except Exception as exception:
             error_message = f"Request failed with this error: {exception}"
             logger.error(error_message)
+            await logging_repository.insert_stt_log(
+                qa_log_id=qa_id,
+                audio_input_bytes=str(wav_data),
+                model_name="Azure",
+                text="",
+                status_code=500,
+                status_message=error_message,
+            )
             raise InternalServerException(error_message)
         if temp_wav_file:
             temp_wav_file.close()
 
         transcribed_text = result.text
-        logger.info("Azure speech to text is successful")
+        return_message = "Azure speech to text is successful"
+        logger.info(return_message)
         logger.info(f"Transcribed text: {transcribed_text}")
+        await logging_repository.insert_stt_log(
+            qa_log_id=qa_id,
+            audio_input_bytes=str(wav_data),
+            model_name="Azure",
+            text=transcribed_text,
+            status_code=200,
+            status_message=return_message,
+        )
         return transcribed_text
 
-    async def text_to_speech(self, text: str, input_language: Language) -> bytes:
+    async def text_to_speech(
+        self, qa_id: str, text: str, input_language: Language
+    ) -> bytes:
         logger.info("Performing text to speech using Azure")
         logger.info(f"Input Language: {input_language.name}")
         logger.info(f"Input Text: {text}")
@@ -363,13 +459,30 @@ class AzureSpeechProcessor(SpeechProcessor):
         except Exception as exception:
             error_message = f"Request failed with this error: {exception}"
             logger.error(error_message)
+            await logging_repository.insert_tts_log(
+                qa_log_id=qa_id,
+                text=text,
+                model_name="Azure",
+                audio_output_bytes="",
+                status_code=500,
+                status_message=error_message,
+            )
             raise InternalServerException(error_message)
 
         if temp_output_file:
             temp_output_file.close()
 
         audio_content = speech_synthesis_result.audio_data
-        logger.info("Azure text to speech is successful")
+        return_message = "Azure text to speech is successful"
+        logger.info(return_message)
+        await logging_repository.insert_tts_log(
+            qa_log_id=qa_id,
+            text=text,
+            model_name="Azure",
+            audio_output_bytes=audio_content,
+            status_code=200,
+            status_message=return_message,
+        )
         return audio_content
 
 
@@ -394,7 +507,9 @@ class CompositeSpeechProcessor(SpeechProcessor):
         ]
         self.azure_not_supported_language_codes = ["OR", "PA"]
 
-    async def speech_to_text(self, wav_data: bytes, input_language: Language) -> str:
+    async def speech_to_text(
+        self, qa_id: str, wav_data: bytes, input_language: Language
+    ) -> str:
         excs = []
         for speech_processor in self.speech_processors:
             try:
@@ -409,14 +524,16 @@ class CompositeSpeechProcessor(SpeechProcessor):
                     pass
                 else:
                     return await speech_processor.speech_to_text(
-                        wav_data, input_language
+                        qa_id, wav_data, input_language
                     )
             except Exception as exc:
                 excs.append(exc)
 
         raise ExceptionGroup("CompositeSpeechProcessor speech to text failed", excs)
 
-    async def text_to_speech(self, text: str, input_language: Language) -> bytes:
+    async def text_to_speech(
+        self, qa_id: str, text: str, input_language: Language
+    ) -> bytes:
         excs = []
         for speech_processor in self.speech_processors:
             try:
@@ -430,7 +547,9 @@ class CompositeSpeechProcessor(SpeechProcessor):
                 ):
                     pass
                 else:
-                    return await speech_processor.text_to_speech(text, input_language)
+                    return await speech_processor.text_to_speech(
+                        qa_id, text, input_language
+                    )
             except Exception as exc:
                 excs.append(exc)
 
