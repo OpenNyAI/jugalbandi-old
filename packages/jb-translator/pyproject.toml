@@ -16,6 +16,7 @@ aiohttp = "3.9.0"
 certifi = "2023.7.22"
 grpcio = "1.56.2"
 urllib3 = "1.26.18"
+jb-logging = {path = "../jb-logging", develop = true}
 
 
 [tool.poetry.group.dev.dependencies]

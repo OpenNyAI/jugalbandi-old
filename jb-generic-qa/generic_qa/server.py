@@ -1,5 +1,4 @@
 import base64
-import os
 from typing import Annotated, List
 
 import httpx
@@ -52,11 +51,6 @@ from .server_helper import (
 
 
 init_env()
-
-APP_NAME = os.environ.get("APP_NAME", "generic_qa")
-EXPOSE_PORT = os.environ.get("EXPOSE_PORT", 8080)
-OTLP_GRPC_ENDPOINT = os.environ.get("OTLP_GRPC_ENDPOINT", "http://tempo:4317")
-
 logger = Logger("generic_qa")
 
 api_description = """
@@ -91,7 +85,10 @@ app = FastAPI(
     },
 )
 
-app.add_middleware(PreResponseMiddleware)
+
+# APP_NAME = os.environ.get("APP_NAME", "generic_qa")
+# EXPOSE_PORT = os.environ.get("EXPOSE_PORT", 8080)
+# OTLP_GRPC_ENDPOINT = os.environ.get("OTLP_GRPC_ENDPOINT", "http://tempo:4317")
 
 # # Setting metrics middleware
 # app.add_middleware(PrometheusMiddleware, app_name=APP_NAME)
@@ -108,6 +105,7 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+app.add_middleware(PreResponseMiddleware)
 
 
 @app.exception_handler(Exception)
@@ -131,14 +129,14 @@ async def root():
 async def chain(response: Response):
     headers = {}
     inject(headers)  # inject trace info to header
-    await logger.critical(headers)
+    logger.critical(headers)
 
     async with httpx.AsyncClient() as client:
         await client.get(
             "http://localhost:8080/",
             headers=headers,
         )
-    await logger.info("Chain Finished")
+    logger.info("Chain Finished")
     return {"path": "/chain"}
 
 
@@ -166,18 +164,18 @@ async def upload_files(
     document_collection = document_repository.new_collection()
     uuid_number = document_collection.id
     source_files = [DocumentSourceFile(file.filename, file) for file in files]
-    await logger.info(f"UUID number: {uuid_number}")
+    logger.info(f"UUID number: {uuid_number}")
     for file in source_files:
-        await logger.info(f"File name: {file.filename}")
+        logger.info(f"File name: {file.filename}")
     await document_collection.init_from_files(source_files)
 
     async for filename in document_collection.list_files():
         await text_converter.textify(filename, document_collection)
-    await logger.info("Textification is successful")
+    logger.info("Textification is successful")
 
     langchain_indexer = LangchainIndexer()
     await langchain_indexer.index(document_collection)
-    await logger.info("Langchain Indexing is successful")
+    logger.info(f"Langchain Indexing is successful for {uuid_number}")
 
     return {
         "uuid_number": uuid_number,
@@ -211,6 +209,7 @@ async def query(
         ),
     ),
 ) -> QueryResponse:
+    logger.info("Querying started")
     return await langchain_qa_engine.query(
         query=query_text,
         speech_query_url=audio_url,
@@ -227,8 +226,8 @@ async def get_rephrased_query(
     query_string: str,
 ):
     answer = await rephrased_question(query_string)
-    await logger.info(f"Query: {query_string}")
-    await logger.info(f"Answer: {answer}")
+    logger.info(f"Query: {query_string}")
+    logger.info(f"Answer: {answer}")
     return {"given_query": query_string, "rephrased_query": answer}
 
 

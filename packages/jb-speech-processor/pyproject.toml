@@ -17,6 +17,7 @@ azure-cognitiveservices-speech = "^1.32.1"
 certifi = "2023.7.22"
 grpcio = "1.56.2"
 urllib3 = "1.26.18"
+jb-logging = {path = "../jb-logging", develop = true}
 
 [tool.poetry.group.dev.dependencies]
 black = "^23.3.0"

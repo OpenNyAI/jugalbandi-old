@@ -34,6 +34,7 @@ certifi = "2023.7.22"
 cryptography = "41.0.6"
 grpcio = "1.56.2"
 urllib3 = "1.26.18"
+jb-logging = {path = "../jb-logging", develop = true}
 
 
 [tool.poetry.group.dev.dependencies]

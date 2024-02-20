@@ -191,11 +191,10 @@ class PreResponseMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
         response = await call_next(request)
         if request.url.path in self.endpoints:
-            print("Pre-response processing")
-            response_body = [section async for section in response.body_iterator]
-            response.body_iterator = iterate_in_threadpool(iter(response_body))
-            response_dict = json.loads(response_body[0].decode())
             if os.getenv("API_KEY_STATUS") == "false":
+                response_body = [section async for section in response.body_iterator]
+                response.body_iterator = iterate_in_threadpool(iter(response_body))
+                response_dict = json.loads(response_body[0].decode())
                 if "rephrased_query" in response_dict:
                     response_dict["rephrased_query"] = (
                         self.trial_message + response_dict["rephrased_query"]
@@ -214,6 +213,5 @@ class PreResponseMiddleware(BaseHTTPMiddleware):
                     response_dict["audio_bytes"] = (
                         self.trial_message + response_dict["audio_bytes"]
                     )
-
-            return JSONResponse(response_dict)
+                return JSONResponse(response_dict)
         return response

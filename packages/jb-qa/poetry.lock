@@ -1398,6 +1398,25 @@ type = "directory"
 url = "../jb-document-collection"
 
 [[package]]
+name = "jb-logging"
+version = "0.1.0"
+description = ""
+optional = false
+python-versions = ">=3.10, <4.0.0"
+files = []
+develop = true
+
+[package.dependencies]
+asyncpg = "0.28.0"
+jb-core = {path = "../jb-core", develop = true}
+pydantic = "1.10.13"
+pytz = "^2023.3"
+
+[package.source]
+type = "directory"
+url = "../jb-logging"
+
+[[package]]
 name = "jb-speech-processor"
 version = "0.1.0"
 description = ""
@@ -3153,4 +3172,4 @@ multidict = ">=4.0"
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.10, <4.0.0"
-content-hash = "1dfd675e6b3a4402ebcda193f4422a3308be1fca1f6a93de870d2dec2221ceaf"
+content-hash = "70c6f314fa033fe96fd2497c6137408cb1019f44f8b6ced2a12f4ac83534efe2"

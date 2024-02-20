@@ -1,9 +1,11 @@
-from datetime import datetime
 import operator
+from datetime import datetime
 from typing import Dict
+
 import asyncpg
 import pytz
 from jugalbandi.core.caching import aiocachedmethod
+
 from .logging_settings import get_logging_settings
 
 
@@ -33,35 +35,19 @@ class LoggingRepository:
         async with engine.acquire() as connection:
             await connection.execute(
                 """
-                CREATE TABLE IF NOT EXISTS jb_users(
-                    id SERIAL PRIMARY KEY,
-                    first_name TEXT,
-                    last_name TEXT,
-                    phone_number BIGINT UNIQUE,
-                    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-                );
-                CREATE TABLE IF NOT EXISTS jb_app(
-                    id SERIAL PRIMARY KEY,
-                    name TEXT,
-                    phone_number BIGINT UNIQUE,
-                    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-                );
                 CREATE TABLE IF NOT EXISTS jb_document_store_log(
-                    user_id INTEGER,
-                    app_id INTEGER,
+                    tenant_api_key INTEGER,
                     uuid TEXT PRIMARY KEY,
                     documents_list TEXT[],
                     total_file_size FLOAT,
                     status_code INTEGER,
                     status_message TEXT,
                     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-                    FOREIGN key (user_id) REFERENCES jb_users(id),
-                    FOREIGN key (app_id) REFERENCES jb_app(id)
+                    FOREIGN key (tenant_api_key) REFERENCES tenant(api_key)
                 );
                 CREATE TABLE IF NOT EXISTS jb_qa_log(
                     id TEXT PRIMARY KEY,
-                    user_id INTEGER,
-                    app_id INTEGER,
+                    tenant_api_key INTEGER,
                     document_uuid TEXT,
                     input_language TEXT DEFAULT 'en',
                     query TEXT,
@@ -76,8 +62,7 @@ class LoggingRepository:
                     status_message TEXT,
                     response_time INTEGER,
                     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-                    FOREIGN KEY (user_id) REFERENCES jb_users(id),
-                    FOREIGN KEY (app_id) REFERENCES jb_app(id),
+                    FOREIGN KEY (tenant_api_key) REFERENCES tenant(api_key),
                     FOREIGN KEY (document_uuid) REFERENCES jb_document_store_log(uuid)
                 );
                 CREATE TABLE IF NOT EXISTS jb_stt_log(
@@ -120,8 +105,7 @@ class LoggingRepository:
                 );
                 CREATE TABLE IF NOT EXISTS jb_chat_history(
                     id SERIAL PRIMARY KEY,
-                    user_id INTEGER,
-                    app_id INTEGER,
+                    tenant_api_key INTEGER,
                     document_uuid TEXT,
                     message_owner TEXT NOT NULL,
                     preferred_language TEXT NOT NULL,
@@ -129,8 +113,7 @@ class LoggingRepository:
                     message TEXT,
                     message_in_english TEXT,
                     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-                    FOREIGN key (user_id) REFERENCES jb_users(id),
-                    FOREIGN KEY (app_id) REFERENCES jb_app(id),
+                    FOREIGN key (tenant_api_key) REFERENCES tenant(api_key),
                     FOREIGN KEY (document_uuid) REFERENCES jb_document_store_log(uuid)
                 );
 
@@ -138,14 +121,12 @@ class LoggingRepository:
                 CREATE INDEX IF NOT EXISTS jb_users_first_name_idx ON jb_users(first_name);
                 CREATE INDEX IF NOT EXISTS jb_app_phone_number_idx ON jb_app(phone_number);
                 CREATE INDEX IF NOT EXISTS jb_document_store_log_uuid_idx ON jb_document_store_log(uuid);
-                CREATE INDEX IF NOT EXISTS jb_qa_log_user_id_idx ON jb_qa_log(user_id);
-                CREATE INDEX IF NOT EXISTS jb_qa_log_app_id_idx ON jb_qa_log(app_id);
+                CREATE INDEX IF NOT EXISTS jb_qa_log_tenant_api_key_idx ON jb_qa_log(tenant_api_key);
                 CREATE INDEX IF NOT EXISTS jb_qa_log_document_uuid_idx ON jb_qa_log(document_uuid);
                 CREATE INDEX IF NOT EXISTS jb_stt_log_qa_log_id_idx ON jb_stt_log(qa_log_id);
                 CREATE INDEX IF NOT EXISTS jb_tts_log_qa_log_id_idx ON jb_tts_log(qa_log_id);
                 CREATE INDEX IF NOT EXISTS jb_translator_log_qa_log_id_idx ON jb_translator_log(qa_log_id);
-                CREATE INDEX IF NOT EXISTS jb_chat_history_user_id_idx ON jb_chat_history(user_id);
-                CREATE INDEX IF NOT EXISTS jb_chat_history_app_id_idx ON jb_chat_history(app_id);
+                CREATE INDEX IF NOT EXISTS jb_chat_history_tenant_api_key_idx ON jb_chat_history(tenant_api_key);
                 CREATE INDEX IF NOT EXISTS jb_chat_history_document_uuid_idx ON jb_chat_history(document_uuid);
             """
             )
@@ -183,8 +164,7 @@ class LoggingRepository:
 
     async def insert_document_store_log(
         self,
-        user_id: int,
-        app_id: int,
+        tenant_api_key: int,
         uuid: str,
         documents_list: list,
         total_file_size: int,
@@ -196,12 +176,11 @@ class LoggingRepository:
             await connection.execute(
                 """
                 INSERT INTO jb_document_store_log
-                (user_id, app_id, uuid, documents_list,
+                (tenant_api_key, uuid, documents_list,
                 total_file_size, status_code, status_message, created_at)
                 VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
                 """,
-                user_id,
-                app_id,
+                tenant_api_key,
                 uuid,
                 documents_list,
                 total_file_size,
@@ -213,8 +192,7 @@ class LoggingRepository:
     async def insert_qa_log(
         self,
         id: str,
-        user_id: int,
-        app_id: int,
+        tenant_api_key: int,
         document_uuid: str,
         input_language: str,
         query: str,
@@ -234,7 +212,7 @@ class LoggingRepository:
             await connection.execute(
                 """
                 INSERT INTO jb_qa_log
-                (id, user_id, app_id, document_uuid, input_language,
+                (id, tenant_api_key, document_uuid, input_language,
                 query, audio_input_link, response, audio_output_link,
                 retrieval_k_value, retrieved_chunks, prompt, gpt_model_name,
                 status_code, status_message, response_time, created_at)
@@ -242,8 +220,7 @@ class LoggingRepository:
                 $12, $13, $14, $15, $16)
                 """,
                 id,
-                user_id,
-                app_id,
+                tenant_api_key,
                 document_uuid,
                 input_language,
                 query,
@@ -356,8 +333,7 @@ class LoggingRepository:
 
     async def insert_chat_history(
         self,
-        user_id: int,
-        app_id: int,
+        tenant_api_key: int,
         document_uuid: str,
         message_owner: str,
         preferred_language: str,
@@ -370,13 +346,12 @@ class LoggingRepository:
             await connection.execute(
                 """
                 INSERT INTO jb_chat_history
-                (user_id, app_id, document_uuid,
+                (tenant_api_key, document_uuid,
                 message_owner, preferred_language, audio_url,
                 message, message_in_english, created_at)
                 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
                 """,
-                user_id,
-                app_id,
+                tenant_api_key,
                 document_uuid,
                 message_owner,
                 preferred_language,
