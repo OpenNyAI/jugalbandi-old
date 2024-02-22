@@ -190,29 +190,42 @@ class PreResponseMiddleware(BaseHTTPMiddleware):
         )
 
     async def dispatch(self, request: Request, call_next):
-        response = await call_next(request)
-        if request.url.path in self.endpoints:
-            if os.getenv("API_KEY_STATUS") == "false":
-                response_body = [section async for section in response.body_iterator]
-                response.body_iterator = iterate_in_threadpool(iter(response_body))
-                response_dict = json.loads(response_body[0].decode())
-                if "rephrased_query" in response_dict:
-                    response_dict["rephrased_query"] = (
-                        self.trial_message + response_dict["rephrased_query"]
-                    )
-                if "message" in response_dict:
-                    response_dict["message"] = (
-                        self.trial_message + response_dict["message"]
-                    )
-                if "answer" in response_dict:
-                    response_dict["answer"] = (
-                        self.trial_message + response_dict["answer"]
-                    )
-                if "text" in response_dict:
-                    response_dict["text"] = self.trial_message + response_dict["text"]
-                if "audio_bytes" in response_dict:
-                    response_dict["audio_bytes"] = (
-                        self.trial_message + response_dict["audio_bytes"]
-                    )
-                return JSONResponse(response_dict)
-        return response
+        try:
+            response = await call_next(request)
+            if request.url.path in self.endpoints:
+                if os.getenv("API_KEY_STATUS") == "false":
+                    response_body = [
+                        section async for section in response.body_iterator
+                    ]
+                    response.body_iterator = iterate_in_threadpool(iter(response_body))
+                    response_dict = json.loads(response_body[0].decode())
+                    if "rephrased_query" in response_dict:
+                        response_dict["rephrased_query"] = (
+                            self.trial_message + response_dict["rephrased_query"]
+                        )
+                    if "message" in response_dict:
+                        response_dict["message"] = (
+                            self.trial_message + response_dict["message"]
+                        )
+                    if "answer" in response_dict:
+                        response_dict["answer"] = (
+                            self.trial_message + response_dict["answer"]
+                        )
+                    if "text" in response_dict:
+                        response_dict["text"] = (
+                            self.trial_message + response_dict["text"]
+                        )
+                    if "audio_bytes" in response_dict:
+                        response_dict["audio_bytes"] = (
+                            self.trial_message + response_dict["audio_bytes"]
+                        )
+                    return JSONResponse(response_dict)
+            return response
+        except Exception as exception:
+            if hasattr(exception, "status_code"):
+                status_code = exception.status_code
+            else:
+                status_code = 500
+            return JSONResponse(
+                status_code=status_code, content={"error_message": str(exception)}
+            )

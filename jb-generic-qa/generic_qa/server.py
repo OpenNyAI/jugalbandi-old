@@ -1,12 +1,11 @@
 import base64
-import os
 from typing import Annotated, List
 
 import httpx
 from auth_service import auth_app
 from fastapi import Depends, FastAPI, File, Query, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse, Response
+from fastapi.responses import Response
 from fastapi.security.api_key import APIKey
 from jugalbandi.audio_converter import convert_to_wav_with_ffmpeg
 from jugalbandi.core import (
@@ -114,16 +113,16 @@ app.add_middleware(
 app.add_middleware(PreResponseMiddleware)
 
 
-@app.exception_handler(Exception)
-async def custom_exception_handler(request, exception):
-    if hasattr(exception, "status_code"):
-        status_code = exception.status_code
-    else:
-        status_code = 500
-    logger.exception(str(exception))
-    return JSONResponse(
-        status_code=status_code, content={"error_message": str(exception)}
-    )
+# @app.exception_handler(Exception)
+# async def custom_exception_handler(request, exception):
+#     if hasattr(exception, "status_code"):
+#         status_code = exception.status_code
+#     else:
+#         status_code = 500
+#     logger.exception(str(exception))
+#     return JSONResponse(
+#         status_code=status_code, content={"error_message": str(exception)}
+#     )
 
 
 @app.get("/")
@@ -168,10 +167,6 @@ async def upload_files(
     text_converter: Annotated[TextConverter, Depends(get_text_converter)],
     logging_repository: Annotated[LoggingRepository, Depends(get_logging_repository)],
 ):
-    # Temporary fix
-    if not api_key:
-        api_key = os.getenv("DEFAULT_API_KEY")
-
     document_collection = document_repository.new_collection()
     uuid_number = document_collection.id
     logger.info(f"UUID number: {uuid_number}")
@@ -246,9 +241,6 @@ async def query(
         ),
     ),
 ) -> QueryResponse:
-    # Temporary fix
-    if not api_key:
-        api_key = os.getenv("DEFAULT_API_KEY")
 
     logger.info("Querying started")
     return await langchain_qa_engine.query(

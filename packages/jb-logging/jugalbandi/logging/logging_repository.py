@@ -61,8 +61,7 @@ class LoggingRepository:
                     status_code INTEGER,
                     status_message TEXT,
                     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-                    FOREIGN KEY (tenant_api_key) REFERENCES tenant(api_key),
-                    FOREIGN KEY (document_uuid) REFERENCES jb_document_store_log(uuid)
+                    FOREIGN KEY (tenant_api_key) REFERENCES tenant(api_key)
                 );
                 CREATE TABLE IF NOT EXISTS jb_stt_log(
                     id SERIAL PRIMARY KEY,
