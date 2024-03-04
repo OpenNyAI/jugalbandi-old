@@ -1,4 +1,4 @@
-### Note: This repos is for low resource deployments. You can test it out by creating your own sample bot on our [test platform](https://test.jugalbandi.ai). For production level deployments please refer to newly architectured [Jugalbandi Manager](https://github.com/OpenNyAI/JB-Manager)
+### Note: This repository is now deprecated. You may still use it for low-resource deployments. You can test it out by creating your own sample bot on our [test platform](https://test.jugalbandi.ai). For production-grade deployments, please refer to the newly architectured [Jugalbandi Manager](https://github.com/OpenNyAI/JB-Manager)
 
 # Jugalbandi
 
