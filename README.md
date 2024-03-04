@@ -1,3 +1,5 @@
+### Note: This repos is for low resource deployments. You can test it out by creating your own sample bot on our [test platform](https://test.jugalbandi.ai). For production level deployments please refer to newly architectured [Jugalbandi Manager](https://github.com/OpenNyAI/JB-Manager)
+
 # Jugalbandi
 
 Jugalbandi is home to several Jugalbandi services and packages for organisations to build and customize on top of them. This repository is structured in a way that it can be used as a monorepo for all the services and packages.
