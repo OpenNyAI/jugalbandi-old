@@ -165,7 +165,10 @@ def login(email, password):
         if tenant_detail is None:
             raise Exception("Invalid login credentials")
         else:
-            return verify_password(password, tenant_detail[5])
+            if verify_password(password, tenant_detail[5]):
+                return True
+            else:
+                raise Exception("Incorrect password")
     except Exception as e:
         st.error(e, icon="🚨")
 
@@ -307,6 +310,9 @@ def _submit_data_cb(files):
             with st.spinner("Uploading in progress"):
                 response = httpx.post(url=url, files=files, timeout=60)
                 response = response.json()
+            if "error_message" in response:
+                st.error(response["error_message"], icon="🚨")
+            else:
                 state["uuid_number"] = response["uuid_number"]
                 file_names = [file[1].name for file in files]
                 tenant_repository.insert_into_tenant_document(
@@ -331,7 +337,7 @@ def _submit_data_cb(files):
                         + value.get("phone_number"),
                         country_code=value.get("country_phone_code"),
                     )
-        modal.open()
+                modal.open()
     except Exception as e:
         st.error(e, icon="🚨")
 

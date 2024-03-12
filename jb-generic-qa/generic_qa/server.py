@@ -1,4 +1,5 @@
 import base64
+import uuid
 from typing import Annotated, List
 
 import httpx
@@ -341,7 +342,7 @@ async def get_speech_to_text(
         speech_processor = DhruvaSpeechProcessor()
 
     wav_data = await convert_to_wav_with_ffmpeg(speech_query_url)
-    text = await speech_processor.speech_to_text(wav_data, language)
+    text = await speech_processor.speech_to_text(str(uuid.uuid4()), wav_data, language)
     return {"text": text}
 
 
@@ -366,7 +367,9 @@ async def get_text_to_speech(
         speech_processor = DhruvaSpeechProcessor()
 
     print(text_query)
-    audio_bytes = await speech_processor.text_to_speech(text_query, language)
+    audio_bytes = await speech_processor.text_to_speech(
+        str(uuid.uuid4()), text_query, language
+    )
     audio_base64 = base64.b64encode(audio_bytes).decode("utf-8")
     return {"audio_bytes": audio_base64}
 
